@@ -285,6 +285,17 @@ function weekLabel(k) {
   const [y, w] = k.split('-W');
   return `S${parseInt(w)}/${y.slice(2)}`;
 }
+function weekStartDate(k) {
+  if (!k) return null;
+  const [y, w] = k.split('-W').map(Number);
+  const jan4 = new Date(Date.UTC(y, 0, 4));
+  const monday = new Date(jan4.getTime() - (jan4.getUTCDay() - 1) * 86400000 + (w - 1) * 7 * 86400000);
+  return monday;
+}
+function fmtDate(d) {
+  if (!d || isNaN(d)) return '—';
+  return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
 function fyMonthSet(fy) {
   const keys = new Set();
   for (let m = 11; m <= 12; m++) keys.add(`${fy-1}-${String(m).padStart(2,'0')}`);
@@ -374,7 +385,7 @@ async function loadFile(token) {
       const wk = weekKey(emision);
       const fy = fiscalYear(periodKey(r['Periodo fiscal']));
       if (!clientRaw[client]) clientRaw[client] = [];
-      clientRaw[client].push({ wk, fy, raciones: Number(r['Raciones'])||0, netoUsd: Number(r['Neto u$s'])||0 });
+      clientRaw[client].push({ wk, fy, emision, raciones: Number(r['Raciones'])||0, netoUsd: Number(r['Neto u$s'])||0 });
     });
 
     const fiscalYears = [...new Set([...scMonthly.keys()].map(k => fiscalYear(k)))].sort((a,b) => b - a);
@@ -622,15 +633,19 @@ function renderClients() {
   sel.onchange = () => renderWeeklyChart(sel.value, clientTotals);
   renderWeeklyChart(sel.value || sorted[0]?.[0], clientTotals);
 
-  // Summary table
+  // Summary table with last order date
   document.getElementById('tabla-clientes').innerHTML =
-    `<thead><tr><th>Cliente</th><th>Raciones</th><th>U$S</th><th>U$S / ración</th></tr></thead>` +
-    `<tbody>${sorted.map(([name, d]) => `<tr onclick="selectClient('${name.replace(/'/g,"\\'")}')">
-      <td>${name}</td>
-      <td>${fmtN(Math.round(d.raciones))}</td>
-      <td>${fmtN(Math.round(d.netoUsd))}</td>
-      <td>${fmtN(d.raciones ? d.netoUsd / d.raciones : 0, 2)}</td>
-    </tr>`).join('')}</tbody>`;
+    `<thead><tr><th>Cliente</th><th>Raciones</th><th>U$S</th><th>U$S / ración</th><th>Último pedido</th></tr></thead>` +
+    `<tbody>${sorted.map(([name, d]) => {
+      const lastDate = d.rows.reduce((max, r) => r.emision > max ? r.emision : max, new Date(0));
+      return `<tr onclick="selectClient('${name.replace(/'/g,"\\'")}')">
+        <td>${name}</td>
+        <td>${fmtN(Math.round(d.raciones))}</td>
+        <td>${fmtN(Math.round(d.netoUsd))}</td>
+        <td>${fmtN(d.raciones ? d.netoUsd / d.raciones : 0, 2)}</td>
+        <td>${fmtDate(lastDate)}</td>
+      </tr>`;
+    }).join('')}</tbody>`;
 }
 
 function selectClient(name) {
@@ -644,9 +659,9 @@ function selectClient(name) {
 
 function renderWeeklyChart(clientName, clientTotals) {
   if (!clientName || !clientTotals[clientName]) return;
-  const rows = clientTotals[clientName].rows;
+  // Only positive raciones (exclude credit notes)
+  const rows = clientTotals[clientName].rows.filter(r => r.raciones > 0);
 
-  // Aggregate by week
   const weekMap = new Map();
   rows.forEach(r => {
     if (!r.wk) return;
@@ -655,8 +670,6 @@ function renderWeeklyChart(clientName, clientTotals) {
   });
   const weeks = [...weekMap.keys()].sort();
   const vals  = weeks.map(w => Math.round(weekMap.get(w)));
-
-  // Color bars: green if ≥ prev, red if <
   const colors = vals.map((v, i) => i === 0 ? 'rgba(59,142,240,0.7)' : v >= vals[i-1] ? 'rgba(29,184,122,0.75)' : 'rgba(224,82,82,0.75)');
 
   destroyChart('semanal');
@@ -667,8 +680,22 @@ function renderWeeklyChart(clientName, clientTotals) {
       datasets: [{ data: vals, backgroundColor: colors, borderRadius: 3 }],
     },
     options: {
-      ...darkOpts(v => fmtN(v) + ' rac'),
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${fmtN(ctx.raw)} raciones` } } },
+      ...darkOpts(v => fmtN(v)),
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => {
+              const wk = weeks[ctx[0].dataIndex];
+              const start = weekStartDate(wk);
+              if (!start) return weekLabel(wk);
+              const end = new Date(start.getTime() + 6 * 86400000);
+              return `${fmtDate(start)} — ${fmtDate(end)}`;
+            },
+            label: ctx => `${fmtN(ctx.raw)} raciones`,
+          },
+        },
+      },
     },
   });
 
