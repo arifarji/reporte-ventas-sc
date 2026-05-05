@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte Ventas — Grupo Tronchetto</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
+  
+  header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { font-size: 16px; font-weight: 500; color: #1a1a1a; }
+  header span { font-size: 13px; color: #888; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
+  #login-screen h2 { font-size: 22px; font-weight: 500; margin-bottom: 12px; }
+  #login-screen p { font-size: 14px; color: #666; margin-bottom: 32px; max-width: 380px; line-height: 1.6; }
+  
+  .btn-ms { display: inline-flex; align-items: center; gap: 10px; background: #0078d4; color: #fff; border: none; border-radius: 6px; padding: 12px 24px; font-size: 15px; cursor: pointer; font-family: inherit; }
+  .btn-ms:hover { background: #006cbe; }
+  .btn-ms svg { width: 20px; height: 20px; }
+
+  #loading-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
+  .spinner { width: 36px; height: 36px; border: 3px solid #e5e5e5; border-top-color: #0078d4; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading-msg { font-size: 14px; color: #666; }
+
+  #error-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
+  #error-msg { font-size: 14px; color: #c0392b; margin-bottom: 16px; max-width: 420px; line-height: 1.6; }
+  .btn-retry { background: none; border: 1px solid #ccc; border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .btn-retry:hover { background: #f0f0f0; }
+
+  #report-screen { display: none; }
+
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .metric { background: #fff; border-radius: 10px; border: 1px solid #e5e5e5; padding: 16px 20px; }
+  .metric label { font-size: 12px; color: #888; display: block; margin-bottom: 6px; }
+  .metric .val { font-size: 24px; font-weight: 500; }
+
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  @media (max-width: 700px) { .charts { grid-template-columns: 1fr; } }
+  .chart-card { background: #fff; border-radius: 10px; border: 1px solid #e5e5e5; padding: 20px; }
+  .chart-card h3 { font-size: 13px; font-weight: 500; color: #888; margin-bottom: 16px; }
+  .chart-wrap { position: relative; height: 240px; }
+
+  .table-card { background: #fff; border-radius: 10px; border: 1px solid #e5e5e5; padding: 20px; overflow-x: auto; }
+  .table-card h3 { font-size: 13px; font-weight: 500; color: #888; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; font-weight: 500; color: #555; white-space: nowrap; }
+  tbody td { padding: 7px 12px; border-bottom: 0.5px solid #f0f0f0; white-space: nowrap; color: #333; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafafa; }
+
+  .footer-note { font-size: 12px; color: #aaa; margin-top: 20px; text-align: center; }
+
+  .user-bar { display: flex; align-items: center; gap: 8px; }
+  .user-bar .avatar { width: 28px; height: 28px; border-radius: 50%; background: #0078d4; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; }
+  .user-bar .name { font-size: 13px; color: #555; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Reporte Ventas — Grupo Tronchetto</h1>
+  <div class="user-bar">
+    <div class="avatar" id="avatar" style="display:none;"></div>
+    <span class="name" id="user-name"></span>
+  </div>
+</header>
+
+<div class="container">
+
+  <div id="login-screen">
+    <h2>Iniciá sesión</h2>
+    <p>Conectate con tu cuenta de Tronchetto para cargar el archivo de evolución de ventas desde SharePoint.</p>
+    <button class="btn-ms" onclick="doLogin()">
+      <svg viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+        <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+      </svg>
+      Iniciar sesión con Microsoft
+    </button>
+  </div>
+
+  <div id="loading-screen">
+    <div class="spinner"></div>
+    <p id="loading-msg">Cargando...</p>
+  </div>
+
+  <div id="error-screen">
+    <p id="error-msg"></p>
+    <button class="btn-retry" onclick="showScreen('login-screen')">Volver a intentar</button>
+  </div>
+
+  <div id="report-screen">
+    <div class="metrics" id="metric-cards"></div>
+    <div class="charts">
+      <div class="chart-card">
+        <h3>Raciones por período</h3>
+        <div class="chart-wrap"><canvas id="chart-raciones" role="img" aria-label="Raciones por período"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Precio promedio AR$</h3>
+        <div class="chart-wrap"><canvas id="chart-precio" role="img" aria-label="Precio promedio AR$ por período"></canvas></div>
+      </div>
+    </div>
+    <div class="table-card">
+      <h3 id="table-title">Datos</h3>
+      <table id="data-table"></table>
+    </div>
+    <p class="footer-note" id="footer-note"></p>
+  </div>
+
+</div>
+
+<script>
+const CLIENT_ID = '48ad5a10-625f-492f-8564-60d612e5405f';
+const TENANT = 'common';
+const SCOPES = 'Files.Read.All Sites.Read.All User.Read';
+const DRIVE_ID = 'b!pmFBZLuJVkeuGzPtHmyMtMnI1MPI-WtNtZQeYhwzMrCBd7CMfYuTQKSXTAwlNDU4';
+const ITEM_ID = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
+const REDIRECT = window.location.href.split('?')[0].split('#')[0];
+
+let chartRaciones, chartPrecio;
+
+function showScreen(id) {
+  ['login-screen','loading-screen','error-screen','report-screen'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? (id === 'login-screen' || id === 'error-screen' ? 'flex' : 'block') : 'none';
+  });
+}
+
+function setLoading(msg) {
+  showScreen('loading-screen');
+  document.getElementById('loading-msg').textContent = msg;
+}
+
+function setError(msg) {
+  showScreen('error-screen');
+  document.getElementById('error-msg').textContent = msg;
+}
+
+function doLogin() {
+  const state = Math.random().toString(36).slice(2);
+  sessionStorage.setItem('oauth_state', state);
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    response_type: 'token',
+    redirect_uri: REDIRECT,
+    scope: SCOPES,
+    state: state,
+    nonce: state,
+  });
+  window.location.href = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize?${params}`;
+}
+
+function parseHash() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return null;
+  const p = new URLSearchParams(hash);
+  const token = p.get('access_token');
+  if (token) {
+    history.replaceState(null, '', window.location.pathname);
+    return token;
+  }
+  return null;
+}
+
+async function getUser(token) {
+  const res = await fetch('https://graph.microsoft.com/v1.0/me', { headers: { Authorization: 'Bearer ' + token } });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function loadFile(token) {
+  setLoading('Descargando archivo desde SharePoint...');
+  try {
+    const user = await getUser(token);
+    if (user) {
+      const initials = ((user.givenName?.[0] || '') + (user.surname?.[0] || '')).toUpperCase() || user.displayName?.[0]?.toUpperCase() || '?';
+      document.getElementById('avatar').textContent = initials;
+      document.getElementById('avatar').style.display = 'flex';
+      document.getElementById('user-name').textContent = user.displayName || user.userPrincipalName;
+    }
+
+    const url = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${ITEM_ID}/content`;
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+    if (res.status === 401) { showScreen('login-screen'); return; }
+    if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+
+    setLoading('Procesando hoja Base...');
+    const buf = await res.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const sheetName = wb.SheetNames.find(n => n.toLowerCase().includes('base')) || wb.SheetNames[0];
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    renderReport(rows, sheetName);
+  } catch(e) {
+    setError('No se pudo cargar el archivo. ' + e.message);
+  }
+}
+
+function fmt(v) {
+  if (v === null || v === undefined || v === '') return '—';
+  if (v instanceof Date) return v.toLocaleDateString('es-AR');
+  if (typeof v === 'number') return isNaN(v) ? '—' : v.toLocaleString('es-AR');
+  return String(v);
+}
+
+function renderReport(rows, sheetName) {
+  if (!rows.length) { setError('La hoja "' + sheetName + '" no tiene datos.'); return; }
+
+  const cols = Object.keys(rows[0]);
+  const racionCol = cols.find(c => /raci/i.test(c));
+  const arCol = cols.find(c => /prom.*ar|ar.*prom|precio.*ar|ar\$/i.test(c));
+  const usCol = cols.find(c => /prom.*u\$|u\$.*prom|precio.*u\$|u\$s/i.test(c));
+  const periodoCol = cols.find(c => /fecha|periodo|mes|recorrido/i.test(c)) || cols[0];
+
+  const numRows = rows.filter(r => racionCol && Number(r[racionCol]));
+  const totalRaciones = racionCol ? numRows.reduce((a,r) => a + (Number(r[racionCol]) || 0), 0) : null;
+  const avgAR = arCol ? rows.filter(r => Number(r[arCol])).reduce((a,r,_,arr) => a + Number(r[arCol])/arr.length, 0) : null;
+  const avgUS = usCol ? rows.filter(r => Number(r[usCol])).reduce((a,r,_,arr) => a + Number(r[usCol])/arr.length, 0) : null;
+
+  const cards = document.getElementById('metric-cards');
+  const metrics = [
+    { label: 'Registros', val: rows.length.toLocaleString('es-AR') },
+    totalRaciones !== null ? { label: 'Total raciones', val: Math.round(totalRaciones).toLocaleString('es-AR') } : null,
+    avgAR !== null ? { label: 'Prom. AR$', val: '$' + Math.round(avgAR).toLocaleString('es-AR') } : null,
+    avgUS !== null ? { label: 'Prom. U$S', val: 'U$S ' + avgUS.toFixed(2) } : null,
+  ].filter(Boolean);
+  cards.innerHTML = metrics.map(m => `<div class="metric"><label>${m.label}</label><div class="val">${m.val}</div></div>`).join('');
+
+  const labels = rows.map(r => {
+    const v = r[periodoCol];
+    if (v instanceof Date) return v.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+    return String(v).slice(0, 10);
+  });
+
+  if (chartRaciones) chartRaciones.destroy();
+  if (chartPrecio) chartPrecio.destroy();
+
+  if (racionCol) {
+    chartRaciones = new Chart(document.getElementById('chart-raciones'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label: 'Raciones', data: rows.map(r => Number(r[racionCol]) || 0), backgroundColor: '#0078d4', borderRadius: 4 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { autoSkip: true, maxRotation: 45, font: { size: 11 } }, grid: { display: false } },
+          y: { ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  if (arCol) {
+    chartPrecio = new Chart(document.getElementById('chart-precio'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{ label: 'Precio AR$', data: rows.map(r => Number(r[arCol]) || 0), borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.08)', borderWidth: 2, pointRadius: 3, fill: true, tension: 0.3 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { autoSkip: true, maxRotation: 45, font: { size: 11 } }, grid: { display: false } },
+          y: { ticks: { font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  const displayCols = cols.slice(0, 12);
+  document.getElementById('table-title').textContent = `Hoja: ${sheetName}`;
+  document.getElementById('data-table').innerHTML =
+    `<thead><tr>${displayCols.map(c => `<th>${c}</th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.slice(0, 200).map(r => `<tr>${displayCols.map(c => `<td>${fmt(r[c])}</td>`).join('')}</tr>`).join('')}</tbody>`;
+
+  document.getElementById('footer-note').textContent =
+    `Mostrando ${Math.min(200, rows.length)} de ${rows.length} filas · ${cols.length} columnas · Última actualización: ${new Date().toLocaleString('es-AR')}`;
+
+  showScreen('report-screen');
+}
+
+const token = parseHash();
+if (token) {
+  sessionStorage.setItem('ms_token', token);
+  loadFile(token);
+} else {
+  const stored = sessionStorage.getItem('ms_token');
+  if (stored) {
+    loadFile(stored);
+  } else {
+    showScreen('login-screen');
+  }
+}
+</script>
+</body>
+</html>
