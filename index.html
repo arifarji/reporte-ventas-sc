@@ -60,12 +60,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .year-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(29,184,122,0.08); }
 
 /* KPIs */
-.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
-@media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 500px) { .kpi-row { grid-template-columns: 1fr; } }
+.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px)  { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 450px)  { .kpi-row { grid-template-columns: 1fr; } }
 .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.kpi-card.highlight { border-color: var(--accent); }
 .kpi-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); margin-bottom: 8px; }
-.kpi-main { font-size: 26px; font-weight: 600; line-height: 1.1; }
+.kpi-main { font-size: 24px; font-weight: 600; line-height: 1.1; }
 .kpi-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
 .kpi-delta { font-size: 12px; margin-top: 6px; }
 .delta-up { color: var(--green); }
@@ -232,6 +234,18 @@ function periodLabel(k) {
   const [y, m] = k.split('-');
   return ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][parseInt(m)-1] + '-' + y.slice(2);
 }
+// Fiscal year: Nov→Oct. Nov-24 → FY2025, Oct-25 → FY2025
+function fiscalYear(key) {
+  const [y, m] = key.split('-').map(Number);
+  return m >= 11 ? y + 1 : y;
+}
+function fyLabel(fy) { return 'AF' + String(fy).slice(2); }
+function fyMonthSet(fy) {
+  const keys = new Set();
+  for (let m = 11; m <= 12; m++) keys.add(`${fy-1}-${String(m).padStart(2,'0')}`);
+  for (let m = 1;  m <= 10; m++) keys.add(`${fy}-${String(m).padStart(2,'0')}`);
+  return keys;
+}
 
 function aggregateRows(rows) {
   const map = new Map();
@@ -297,7 +311,7 @@ async function loadFile(token) {
     // Top productos (Tipo final, acumulado total — se filtra por año al renderizar)
     const prodByYear = {};
     scRows.forEach(r => {
-      const year = periodKey(r['Periodo fiscal']).slice(0, 4);
+      const year = fiscalYear(periodKey(r['Periodo fiscal']));
       const prod = String(r['Tipo final']).trim() || 'Otros';
       if (!prodByYear[year]) prodByYear[year] = new Map();
       const m = prodByYear[year];
@@ -307,9 +321,9 @@ async function loadFile(token) {
       p.netoUsd  += Number(r['Neto u$s']) || 0;
     });
 
-    const years = [...new Set([...scMonthly.keys()].map(k => k.slice(0, 4)))].sort();
-    activeYears = new Set(years);
-    allData = { scMonthly, slMonthly, totalMonthly, mepData, prodByYear, years };
+    const fiscalYears = [...new Set([...scMonthly.keys()].map(k => fiscalYear(k)))].sort((a,b) => b - a);
+    activeYears = new Set(fiscalYears);
+    allData = { scMonthly, slMonthly, totalMonthly, mepData, prodByYear, fiscalYears };
 
     buildDashboard();
   } catch(e) {
@@ -349,20 +363,25 @@ function setCurrency(cur) {
 function buildDashboard() {
   const yf = document.getElementById('year-filters');
   yf.innerHTML = '';
-  const addBtn = (label, years) => {
+  const addBtn = (label, fy) => {
     const btn = document.createElement('button');
-    btn.className = 'year-btn' + (!years ? ' active' : '');
+    // Default active = most recent fiscal year
+    const mostRecent = allData.fiscalYears[0];
+    btn.className = 'year-btn' + (fy === mostRecent ? ' active' : '');
     btn.textContent = label;
     btn.onclick = () => {
       document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      activeYears = years ? new Set(years) : new Set(allData.years);
+      activeYears = fy === null ? new Set(allData.fiscalYears) : new Set([fy]);
       renderAll();
     };
     yf.appendChild(btn);
   };
+  // Most recent first, then Todos at the end
+  allData.fiscalYears.forEach(fy => addBtn(fyLabel(fy), fy));
   addBtn('Todos', null);
-  allData.years.forEach(y => addBtn(y, [y]));
+  // Start with most recent year selected
+  activeYears = new Set([allData.fiscalYears[0]]);
 
   renderMEP();
   renderAll();
@@ -377,7 +396,7 @@ function renderMEP() {
 }
 
 function renderAll() {
-  const months = [...allData.scMonthly.keys()].filter(k => activeYears.has(k.slice(0,4))).sort();
+  const months = [...allData.scMonthly.keys()].filter(k => activeYears.has(fiscalYear(k))).sort();
   if (!months.length) return;
 
   const labels   = months.map(periodLabel);
@@ -399,6 +418,13 @@ function renderAll() {
   const precioP= scP.raciones? (currency === 'usd' ? scP.netoUsd/scP.raciones : scP.montoNeto/scP.raciones) : 0;
   const pctUsd = tot.netoUsd   ? sc.netoUsd/tot.netoUsd*100     : 0;
   const pctRac = tot.raciones  ? sc.raciones/tot.raciones*100   : 0;
+
+  // Annual totals for active fiscal year(s)
+  const fySet = activeYears.size === 1 ? activeYears : new Set([allData.fiscalYears[0]]);
+  const fyKeys = [...allData.scMonthly.keys()].filter(k => fySet.has(fiscalYear(k)));
+  const fyTotSC  = fyKeys.reduce((a, k) => { const d = allData.scMonthly.get(k)||{}; a.usd += d.netoUsd||0; a.ars += d.montoNeto||0; a.rac += d.raciones||0; return a; }, {usd:0, ars:0, rac:0});
+  const fyLabelStr = [...fySet].map(fyLabel).join(' + ');
+  const fyComplete = fyKeys.length >= 12;
 
   const kpiData = [
     {
@@ -428,10 +454,17 @@ function renderAll() {
       sub:  `${pctRac.toFixed(1)}% raciones`,
       delta: '', hint: '',
     },
+    {
+      label: `Facturación ${fyLabelStr}${fyComplete ? '' : ' (acum.)'}`,
+      main: currency === 'usd' ? `U$S ${fmtN(Math.round(fyTotSC.usd))}` : fmtAR(fyTotSC.ars),
+      sub:  `${fmtN(Math.round(fyTotSC.rac))} raciones`,
+      delta: '', hint: '',
+      highlight: true,
+    },
   ];
 
   document.getElementById('kpi-row').innerHTML = kpiData.map(c => `
-    <div class="kpi-card">
+    <div class="kpi-card${c.highlight ? ' highlight' : ''}">
       <div class="kpi-label">${c.label}</div>
       <div class="kpi-main">${c.main}</div>
       ${c.sub ? `<div class="kpi-sub">${c.sub}</div>` : ''}
@@ -465,7 +498,7 @@ function renderAll() {
 
   // Chart 3: Top productos (acumulado años activos)
   const prodMap = new Map();
-  activeYears.forEach(y => {
+  [...activeYears].forEach(y => {
     const m = allData.prodByYear[y];
     if (!m) return;
     m.forEach((v, k) => {
