@@ -7,134 +7,167 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; color: #1a1a1a; min-height: 100vh; }
-  
-  header { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
-  header h1 { font-size: 16px; font-weight: 500; color: #1a1a1a; }
-  header span { font-size: 13px; color: #888; }
+:root {
+  --bg: #111318; --surface: #1c1f26; --surface2: #252830; --border: #2e3240;
+  --text: #e8eaf0; --text2: #8b90a0; --accent: #1db87a; --blue: #3b8ef0;
+  --red: #e05252; --green: #1db87a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+/* Auth */
+#login-screen, #loading-screen, #error-screen {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; text-align: center; padding: 24px;
+}
+#login-screen h2 { font-size: 22px; font-weight: 500; margin-bottom: 12px; }
+#login-screen p { font-size: 14px; color: var(--text2); margin-bottom: 32px; max-width: 380px; line-height: 1.6; }
+.btn-ms { display: inline-flex; align-items: center; gap: 10px; background: #0078d4; color: #fff; border: none; border-radius: 6px; padding: 12px 24px; font-size: 15px; cursor: pointer; font-family: inherit; }
+.btn-ms:hover { background: #006cbe; }
+.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading-msg { font-size: 14px; color: var(--text2); }
+#error-msg { font-size: 14px; color: var(--red); margin-bottom: 16px; max-width: 420px; line-height: 1.6; }
+.btn-retry { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer; font-family: inherit; color: var(--text); }
 
-  #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
-  #login-screen h2 { font-size: 22px; font-weight: 500; margin-bottom: 12px; }
-  #login-screen p { font-size: 14px; color: #666; margin-bottom: 32px; max-width: 380px; line-height: 1.6; }
-  
-  .btn-ms { display: inline-flex; align-items: center; gap: 10px; background: #0078d4; color: #fff; border: none; border-radius: 6px; padding: 12px 24px; font-size: 15px; cursor: pointer; font-family: inherit; }
-  .btn-ms:hover { background: #006cbe; }
-  .btn-ms svg { width: 20px; height: 20px; }
+/* Header */
+.dash-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 13px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.dash-title { display: flex; align-items: center; gap: 10px; }
+.dash-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.dash-title h1 { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.toggle-group { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.toggle-btn { background: none; border: none; color: var(--text2); padding: 5px 13px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+.toggle-btn.active { background: var(--accent); color: #fff; }
+.user-chip { display: flex; align-items: center; gap: 8px; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+.user-name { font-size: 13px; color: var(--text2); }
 
-  #loading-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
-  .spinner { width: 36px; height: 36px; border: 3px solid #e5e5e5; border-top-color: #0078d4; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #loading-msg { font-size: 14px; color: #666; }
+/* MEP bar */
+.mep-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 9px 28px; display: flex; align-items: center; gap: 24px; overflow-x: auto; }
+.mep-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); white-space: nowrap; flex-shrink: 0; }
+.mep-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.mep-month { font-size: 12px; color: var(--text2); }
+.mep-val { font-size: 13px; font-weight: 600; }
 
-  #error-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
-  #error-msg { font-size: 14px; color: #c0392b; margin-bottom: 16px; max-width: 420px; line-height: 1.6; }
-  .btn-retry { background: none; border: 1px solid #ccc; border-radius: 6px; padding: 8px 18px; font-size: 13px; cursor: pointer; font-family: inherit; }
-  .btn-retry:hover { background: #f0f0f0; }
+/* Body */
+.dash-body { padding: 20px 28px; max-width: 1300px; margin: 0 auto; }
 
-  #report-screen { display: none; }
+/* Filter bar */
+.filter-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+.filter-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); margin-right: 4px; }
+.year-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text2); padding: 5px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.year-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(29,184,122,0.08); }
 
-  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
-  .metric { background: #fff; border-radius: 10px; border: 1px solid #e5e5e5; padding: 16px 20px; }
-  .metric label { font-size: 12px; color: #888; display: block; margin-bottom: 6px; }
-  .metric .val { font-size: 24px; font-weight: 500; }
+/* KPIs */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 900px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 500px) { .kpi-row { grid-template-columns: 1fr; } }
+.kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+.kpi-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); margin-bottom: 8px; }
+.kpi-main { font-size: 26px; font-weight: 600; line-height: 1.1; }
+.kpi-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.kpi-delta { font-size: 12px; margin-top: 6px; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--red); }
 
-  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
-  @media (max-width: 700px) { .charts { grid-template-columns: 1fr; } }
-  .chart-card { background: #fff; border-radius: 10px; border: 1px solid #e5e5e5; padding: 20px; }
-  .chart-card h3 { font-size: 13px; font-weight: 500; color: #888; margin-bottom: 16px; }
-  .chart-wrap { position: relative; height: 240px; }
-
-  .table-card { background: #fff; border-radius: 10px; border: 1px solid #e5e5e5; padding: 20px; overflow-x: auto; }
-  .table-card h3 { font-size: 13px; font-weight: 500; color: #888; margin-bottom: 16px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead th { text-align: left; padding: 8px 12px; border-bottom: 1px solid #e5e5e5; font-weight: 500; color: #555; white-space: nowrap; }
-  tbody td { padding: 7px 12px; border-bottom: 0.5px solid #f0f0f0; white-space: nowrap; color: #333; }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover { background: #fafafa; }
-
-  .footer-note { font-size: 12px; color: #aaa; margin-top: 20px; text-align: center; }
-
-  .user-bar { display: flex; align-items: center; gap: 8px; }
-  .user-bar .avatar { width: 28px; height: 28px; border-radius: 50%; background: #0078d4; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; }
-  .user-bar .name { font-size: 13px; color: #555; }
+/* Charts */
+.charts-row { display: grid; gap: 12px; margin-bottom: 12px; }
+.charts-row.full { grid-template-columns: 1fr; }
+.charts-row.half { grid-template-columns: 1fr 1fr; }
+@media (max-width: 820px) { .charts-row.half { grid-template-columns: 1fr; } }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+.chart-card h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); margin-bottom: 14px; }
+.chart-wrap { position: relative; height: 220px; }
+.chart-wrap.tall { height: 300px; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Reporte Ventas — Grupo Tronchetto</h1>
-  <div class="user-bar">
-    <div class="avatar" id="avatar" style="display:none;"></div>
-    <span class="name" id="user-name"></span>
-  </div>
-</header>
+<div id="login-screen">
+  <h2>Iniciá sesión</h2>
+  <p>Conectate con tu cuenta de Tronchetto para acceder al reporte de ventas Sous Chef.</p>
+  <button class="btn-ms" onclick="doLogin()">
+    <svg viewBox="0 0 21 21" fill="none" width="20" height="20"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+    Iniciar sesión con Microsoft
+  </button>
+</div>
 
-<div class="container">
+<div id="loading-screen" style="display:none;">
+  <div class="spinner"></div>
+  <p id="loading-msg">Cargando...</p>
+</div>
 
-  <div id="login-screen">
-    <h2>Iniciá sesión</h2>
-    <p>Conectate con tu cuenta de Tronchetto para cargar el archivo de evolución de ventas desde SharePoint.</p>
-    <button class="btn-ms" onclick="doLogin()">
-      <svg viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-        <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-        <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-        <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-      </svg>
-      Iniciar sesión con Microsoft
-    </button>
-  </div>
+<div id="error-screen" style="display:none;">
+  <p id="error-msg"></p>
+  <button class="btn-retry" onclick="showScreen('login-screen')">Volver a intentar</button>
+</div>
 
-  <div id="loading-screen">
-    <div class="spinner"></div>
-    <p id="loading-msg">Cargando...</p>
-  </div>
-
-  <div id="error-screen">
-    <p id="error-msg"></p>
-    <button class="btn-retry" onclick="showScreen('login-screen')">Volver a intentar</button>
-  </div>
-
-  <div id="report-screen">
-    <div class="metrics" id="metric-cards"></div>
-    <div class="charts">
-      <div class="chart-card">
-        <h3>Raciones por período</h3>
-        <div class="chart-wrap"><canvas id="chart-raciones" role="img" aria-label="Raciones por período"></canvas></div>
+<div id="report-screen" style="display:none;">
+  <header class="dash-header">
+    <div class="dash-title">
+      <div class="dash-dot"></div>
+      <h1>Sous Chef — Ventas</h1>
+    </div>
+    <div class="header-right">
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="btn-usd" onclick="setCurrency('usd')">U$S</button>
+        <button class="toggle-btn" id="btn-ars" onclick="setCurrency('ars')">AR$</button>
       </div>
-      <div class="chart-card">
-        <h3>Monto Neto AR$ por período</h3>
-        <div class="chart-wrap"><canvas id="chart-precio" role="img" aria-label="Monto Neto AR$ por período"></canvas></div>
+      <div class="user-chip">
+        <div class="avatar" id="avatar" style="display:none;"></div>
+        <span class="user-name" id="user-name"></span>
       </div>
     </div>
-    <div class="table-card">
-      <h3 id="table-title">Datos</h3>
-      <table id="data-table"></table>
-    </div>
-    <p class="footer-note" id="footer-note"></p>
-  </div>
+  </header>
 
+  <div id="mep-bar" class="mep-bar"></div>
+
+  <div class="dash-body">
+    <div class="filter-bar">
+      <span class="filter-label">Año</span>
+      <div id="year-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="charts-row full">
+      <div class="chart-card">
+        <h3 id="title-facturacion">Facturación mensual U$S — Sous Chef</h3>
+        <div class="chart-wrap"><canvas id="chart-facturacion"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-row half">
+      <div class="chart-card">
+        <h3>SC vs Social Lunch — Facturación U$S</h3>
+        <div class="chart-wrap"><canvas id="chart-vs-sl"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Top productos — Raciones (acumulado período)</h3>
+        <div class="chart-wrap tall"><canvas id="chart-productos"></canvas></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 const CLIENT_ID = '48ad5a10-625f-492f-8564-60d612e5405f';
-const TENANT = '3b704bc6-f92b-4581-a329-e1d4afa9987a';
-const SCOPES = 'Files.Read.All Sites.Read.All User.Read';
+const TENANT   = '3b704bc6-f92b-4581-a329-e1d4afa9987a';
+const SCOPES   = 'Files.Read.All Sites.Read.All User.Read';
 const DRIVE_ID = 'b!pmFBZLuJVkeuGzPtHmyMtMnI1MPI-WtNtZQeYhwzMrCBd7CMfYuTQKSXTAwlNDU4';
-const ITEM_ID = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
+const ITEM_ID  = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
 const REDIRECT = 'https://reporte-ventas-sc.vercel.app/';
 
-let chartRaciones, chartPrecio;
+let currency = 'usd';
+let activeYears = new Set();
+let allData = null;
+let charts = {};
 
-// --- PKCE helpers ---
-function b64url(buffer) {
-  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+// --- PKCE ---
+function b64url(buf) {
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
 }
-
 async function generatePKCE() {
   const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
@@ -143,73 +176,39 @@ async function generatePKCE() {
 
 function showScreen(id) {
   ['login-screen','loading-screen','error-screen','report-screen'].forEach(s => {
-    document.getElementById(s).style.display = s === id ? (id === 'login-screen' || id === 'error-screen' ? 'flex' : 'block') : 'none';
+    document.getElementById(s).style.display = s === id ? (s === 'report-screen' ? 'block' : 'flex') : 'none';
   });
 }
-
-function setLoading(msg) {
-  showScreen('loading-screen');
-  document.getElementById('loading-msg').textContent = msg;
-}
-
-function setError(msg) {
-  showScreen('error-screen');
-  document.getElementById('error-msg').textContent = msg;
-}
+function setLoading(msg) { showScreen('loading-screen'); document.getElementById('loading-msg').textContent = msg; }
+function setError(msg) { showScreen('error-screen'); document.getElementById('error-msg').textContent = msg; }
 
 async function doLogin() {
   const { verifier, challenge } = await generatePKCE();
   const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
   sessionStorage.setItem('pkce_verifier', verifier);
   sessionStorage.setItem('oauth_state', state);
-  const params = new URLSearchParams({
-    client_id: CLIENT_ID,
-    response_type: 'code',
-    redirect_uri: REDIRECT,
-    scope: SCOPES,
-    state,
-    code_challenge: challenge,
-    code_challenge_method: 'S256',
-  });
-  window.location.href = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize?${params}`;
+  const p = new URLSearchParams({ client_id: CLIENT_ID, response_type: 'code', redirect_uri: REDIRECT, scope: SCOPES, state, code_challenge: challenge, code_challenge_method: 'S256' });
+  window.location.href = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize?${p}`;
 }
 
 async function exchangeCode(code) {
   const verifier = sessionStorage.getItem('pkce_verifier');
-  if (!verifier) throw new Error('PKCE verifier no encontrado. Intentá iniciar sesión de nuevo.');
-  const body = new URLSearchParams({
-    client_id: CLIENT_ID,
-    grant_type: 'authorization_code',
-    code,
-    redirect_uri: REDIRECT,
-    code_verifier: verifier,
-  });
-  const res = await fetch(`https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString(),
-  });
+  if (!verifier) throw new Error('PKCE verifier no encontrado.');
+  const body = new URLSearchParams({ client_id: CLIENT_ID, grant_type: 'authorization_code', code, redirect_uri: REDIRECT, code_verifier: verifier });
+  const res = await fetch(`https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error_description || `Error ${res.status} al obtener token`);
+  if (!res.ok) throw new Error(data.error_description || `Error ${res.status}`);
   sessionStorage.removeItem('pkce_verifier');
   sessionStorage.removeItem('oauth_state');
   return data.access_token;
 }
 
 async function handleCallback() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const state = params.get('state');
-  const error = params.get('error');
-  if (error) {
-    setError(`Error de autenticación: ${params.get('error_description') || error}`);
-    return true;
-  }
+  const p = new URLSearchParams(window.location.search);
+  const code = p.get('code'), state = p.get('state'), error = p.get('error');
+  if (error) { setError(`Error de autenticación: ${p.get('error_description') || error}`); return true; }
   if (!code) return false;
-  if (state !== sessionStorage.getItem('oauth_state')) {
-    setError('Error de seguridad: state inválido. Intentá de nuevo.');
-    return true;
-  }
+  if (state !== sessionStorage.getItem('oauth_state')) { setError('Error de seguridad: state inválido.'); return true; }
   history.replaceState(null, '', window.location.pathname);
   setLoading('Autenticando...');
   const token = await exchangeCode(code);
@@ -220,8 +219,49 @@ async function handleCallback() {
 
 async function getUser(token) {
   const res = await fetch('https://graph.microsoft.com/v1.0/me', { headers: { Authorization: 'Bearer ' + token } });
-  if (!res.ok) return null;
-  return res.json();
+  return res.ok ? res.json() : null;
+}
+
+// --- Data helpers ---
+function periodKey(d) {
+  if (d instanceof Date) return d.toISOString().slice(0, 7);
+  return String(d).slice(0, 7);
+}
+function periodLabel(k) {
+  if (!k) return '';
+  const [y, m] = k.split('-');
+  return ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][parseInt(m)-1] + '-' + y.slice(2);
+}
+
+function aggregateRows(rows) {
+  const map = new Map();
+  rows.forEach(r => {
+    const key = periodKey(r['Periodo fiscal']);
+    if (!map.has(key)) map.set(key, { raciones: 0, montoNeto: 0, netoUsd: 0 });
+    const p = map.get(key);
+    p.raciones  += Number(r['Raciones'])    || 0;
+    p.montoNeto += Number(r['Monto Neto'])  || 0;
+    p.netoUsd   += Number(r['Neto u$s'])    || 0;
+  });
+  return map;
+}
+
+function parseMEP(ws) {
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  const mep = new Map();
+  let hdr = -1;
+  for (let i = 0; i < rows.length; i++) {
+    if (String(rows[i][1]).toLowerCase().includes('periodo')) { hdr = i; break; }
+  }
+  if (hdr < 0) return mep;
+  for (let i = hdr + 1; i < rows.length; i++) {
+    const per = rows[i][1], val = rows[i][3];
+    if (!per || !val) continue;
+    const d = per instanceof Date ? per : new Date(per);
+    if (isNaN(d)) continue;
+    mep.set(d.toISOString().slice(0, 7), Math.round(Number(val)));
+  }
+  return mep;
 }
 
 async function loadFile(token) {
@@ -229,7 +269,7 @@ async function loadFile(token) {
   try {
     const user = await getUser(token);
     if (user) {
-      const initials = ((user.givenName?.[0] || '') + (user.surname?.[0] || '')).toUpperCase() || user.displayName?.[0]?.toUpperCase() || '?';
+      const initials = ((user.givenName?.[0] || '') + (user.surname?.[0] || '')).toUpperCase() || '?';
       document.getElementById('avatar').textContent = initials;
       document.getElementById('avatar').style.display = 'flex';
       document.getElementById('user-name').textContent = user.displayName || user.userPrincipalName;
@@ -240,132 +280,245 @@ async function loadFile(token) {
     if (res.status === 401) { showScreen('login-screen'); return; }
     if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
 
-    setLoading('Procesando hoja Base...');
+    setLoading('Procesando datos...');
     const buf = await res.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-    const sheetName = wb.SheetNames.find(n => n.toLowerCase().includes('base')) || wb.SheetNames[0];
-    const ws = wb.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    const tipoCol = Object.keys(rows[0] || {}).find(c => /tipo\s*de\s*producto/i.test(c));
-    const TIPOS = ['semielaborados', 'viandas vida util'];
-    const filtered = tipoCol
-      ? rows.filter(r => TIPOS.includes(String(r[tipoCol]).toLowerCase().trim()))
-      : rows;
-    renderReport(filtered);
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets['Base'], { defval: '' });
+
+    const scRows    = rows.filter(r => String(r['UDN']).trim() === 'Sous Chef');
+    const slRows    = rows.filter(r => String(r['UDN']).trim() === 'Social Lunch');
+
+    const scMonthly    = aggregateRows(scRows);
+    const slMonthly    = aggregateRows(slRows);
+    const totalMonthly = aggregateRows(rows);
+
+    const mepData = wb.Sheets['Indices'] ? parseMEP(wb.Sheets['Indices']) : new Map();
+
+    // Top productos (Tipo final, acumulado total — se filtra por año al renderizar)
+    const prodByYear = {};
+    scRows.forEach(r => {
+      const year = periodKey(r['Periodo fiscal']).slice(0, 4);
+      const prod = String(r['Tipo final']).trim() || 'Otros';
+      if (!prodByYear[year]) prodByYear[year] = new Map();
+      const m = prodByYear[year];
+      if (!m.has(prod)) m.set(prod, { raciones: 0, netoUsd: 0 });
+      const p = m.get(prod);
+      p.raciones += Number(r['Raciones']) || 0;
+      p.netoUsd  += Number(r['Neto u$s']) || 0;
+    });
+
+    const years = [...new Set([...scMonthly.keys()].map(k => k.slice(0, 4)))].sort();
+    activeYears = new Set(years);
+    allData = { scMonthly, slMonthly, totalMonthly, mepData, prodByYear, years };
+
+    buildDashboard();
   } catch(e) {
     setError('No se pudo cargar el archivo. ' + e.message);
   }
 }
 
+// --- Formatting ---
+function fmtN(v, dec = 0) { return Number(v).toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
 function fmtAR(v) {
-  return '$' + Math.round(v).toLocaleString('es-AR');
+  const a = Math.abs(v);
+  if (a >= 1e9) return 'AR$ ' + (v/1e9).toFixed(1) + 'B';
+  if (a >= 1e6) return 'AR$ ' + (v/1e6).toFixed(1) + 'M';
+  return 'AR$ ' + fmtN(v);
 }
-
 function fmtUSD(v) {
-  return 'U$S ' + Math.round(v).toLocaleString('es-AR');
+  const a = Math.abs(v);
+  if (a >= 1e6) return 'U$S ' + (v/1e6).toFixed(2) + 'M';
+  if (a >= 1e3) return 'U$S ' + fmtN(v/1e3, 1) + 'k';
+  return 'U$S ' + fmtN(v);
+}
+function pctDelta(curr, prev) {
+  if (!prev) return '';
+  const pct = ((curr - prev) / Math.abs(prev)) * 100;
+  const cls = pct >= 0 ? 'delta-up' : 'delta-down';
+  return `<span class="${cls}">${pct >= 0 ? '↑' : '↓'} ${Math.abs(pct).toFixed(1)}%</span>`;
 }
 
-function renderReport(rows) {
-  if (!rows.length) { setError('Sin datos para mostrar con el filtro aplicado.'); return; }
+// --- Dashboard build ---
+function setCurrency(cur) {
+  currency = cur;
+  document.getElementById('btn-usd').classList.toggle('active', cur === 'usd');
+  document.getElementById('btn-ars').classList.toggle('active', cur === 'ars');
+  if (allData) renderAll();
+}
 
-  // Aggregate by Periodo fiscal (monthly)
-  const periodMap = new Map();
-  rows.forEach(r => {
-    const d = r['Periodo fiscal'];
-    let key, label;
-    if (d instanceof Date) {
-      key = d.toISOString().slice(0, 7);
-      label = d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
-    } else {
-      key = String(d).slice(0, 7);
-      label = key;
-    }
-    if (!periodMap.has(key)) periodMap.set(key, { label, raciones: 0, montoNeto: 0, netoUsd: 0 });
-    const p = periodMap.get(key);
-    p.raciones += Number(r['Raciones']) || 0;
-    p.montoNeto += Number(r['Monto Neto']) || 0;
-    p.netoUsd += Number(r['Neto u$s']) || 0;
+function buildDashboard() {
+  const yf = document.getElementById('year-filters');
+  yf.innerHTML = '';
+  const addBtn = (label, years) => {
+    const btn = document.createElement('button');
+    btn.className = 'year-btn' + (!years ? ' active' : '');
+    btn.textContent = label;
+    btn.onclick = () => {
+      document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeYears = years ? new Set(years) : new Set(allData.years);
+      renderAll();
+    };
+    yf.appendChild(btn);
+  };
+  addBtn('Todos', null);
+  allData.years.forEach(y => addBtn(y, [y]));
+
+  renderMEP();
+  renderAll();
+  showScreen('report-screen');
+}
+
+function renderMEP() {
+  const keys = [...allData.mepData.keys()].sort().slice(-6).reverse();
+  document.getElementById('mep-bar').innerHTML =
+    `<span class="mep-label">TC MEP</span>` +
+    keys.map(k => `<span class="mep-item"><span class="mep-month">${periodLabel(k)}</span><span class="mep-val">$${fmtN(allData.mepData.get(k))}</span></span>`).join('');
+}
+
+function renderAll() {
+  const months = [...allData.scMonthly.keys()].filter(k => activeYears.has(k.slice(0,4))).sort();
+  if (!months.length) return;
+
+  const labels   = months.map(periodLabel);
+  const scData   = months.map(k => allData.scMonthly.get(k)    || { raciones:0, montoNeto:0, netoUsd:0 });
+  const slData   = months.map(k => allData.slMonthly.get(k)    || { raciones:0, montoNeto:0, netoUsd:0 });
+  const totData  = months.map(k => allData.totalMonthly.get(k) || { raciones:0, montoNeto:0, netoUsd:0 });
+
+  // KPIs — latest month vs previous
+  const lastIdx = months.length - 1;
+  const sc   = scData[lastIdx];
+  const scP  = scData[lastIdx - 1] || {};
+  const tot  = totData[lastIdx];
+  const lastLabel = periodLabel(months[lastIdx]).toUpperCase();
+  const prevLabel = lastIdx > 0 ? periodLabel(months[lastIdx-1]) : '';
+
+  const factur = currency === 'usd' ? sc.netoUsd   : sc.montoNeto;
+  const facturP= currency === 'usd' ? scP.netoUsd  : scP.montoNeto;
+  const precio = sc.raciones ? (currency === 'usd' ? sc.netoUsd/sc.raciones : sc.montoNeto/sc.raciones) : 0;
+  const precioP= scP.raciones? (currency === 'usd' ? scP.netoUsd/scP.raciones : scP.montoNeto/scP.raciones) : 0;
+  const pctUsd = tot.netoUsd   ? sc.netoUsd/tot.netoUsd*100     : 0;
+  const pctRac = tot.raciones  ? sc.raciones/tot.raciones*100   : 0;
+
+  const kpiData = [
+    {
+      label: `Facturación SC ${lastLabel}`,
+      main: currency === 'usd' ? `U$S ${fmtN(Math.round(sc.netoUsd))}` : fmtAR(sc.montoNeto),
+      sub:  currency === 'usd' ? fmtAR(sc.montoNeto) : `U$S ${fmtN(Math.round(sc.netoUsd))}`,
+      delta: pctDelta(factur, facturP),
+      hint: prevLabel ? `vs ${prevLabel} (${currency==='usd'?fmtUSD(facturP):fmtAR(facturP)})` : '',
+    },
+    {
+      label: `Raciones SC ${lastLabel}`,
+      main: fmtN(Math.round(sc.raciones)),
+      sub: '',
+      delta: pctDelta(sc.raciones, scP.raciones),
+      hint: prevLabel ? `vs ${prevLabel} (${fmtN(Math.round(scP.raciones||0))})` : '',
+    },
+    {
+      label: 'Precio prom. / ración',
+      main: currency === 'usd' ? `U$S ${fmtN(precio, 2)}` : `AR$ ${fmtN(Math.round(precio))}`,
+      sub:  currency === 'usd' ? `AR$ ${fmtN(Math.round(sc.raciones?sc.montoNeto/sc.raciones:0))}` : `U$S ${fmtN(sc.raciones?sc.netoUsd/sc.raciones:0, 2)}`,
+      delta: pctDelta(precio, precioP),
+      hint: prevLabel ? `vs ${prevLabel}` : '',
+    },
+    {
+      label: 'SC sobre total grupo',
+      main: `${pctUsd.toFixed(1)}%`,
+      sub:  `${pctRac.toFixed(1)}% raciones`,
+      delta: '', hint: '',
+    },
+  ];
+
+  document.getElementById('kpi-row').innerHTML = kpiData.map(c => `
+    <div class="kpi-card">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-main">${c.main}</div>
+      ${c.sub ? `<div class="kpi-sub">${c.sub}</div>` : ''}
+      ${c.delta ? `<div class="kpi-delta">${c.delta} <span style="color:var(--text2);font-size:11px">${c.hint}</span></div>` : ''}
+    </div>`).join('');
+
+  // Chart 1: Facturación mensual
+  document.getElementById('title-facturacion').textContent =
+    `Facturación mensual ${currency==='usd'?'U$S':'AR$'} — Sous Chef`;
+  const factVals = scData.map(d => Math.round(currency==='usd' ? d.netoUsd : d.montoNeto));
+  destroyChart('fact');
+  charts.fact = new Chart(document.getElementById('chart-facturacion'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data: factVals, backgroundColor: 'rgba(29,184,122,0.75)', borderColor: '#1db87a', borderWidth: 1, borderRadius: 3 }] },
+    options: darkOpts(v => currency==='usd' ? fmtUSD(v) : fmtAR(v)),
   });
 
-  const periods = [...periodMap.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([, v]) => v);
-
-  const totalRaciones = periods.reduce((a, p) => a + p.raciones, 0);
-  const totalMontoNeto = periods.reduce((a, p) => a + p.montoNeto, 0);
-  const totalNetoUsd = periods.reduce((a, p) => a + p.netoUsd, 0);
-  const precioPromAr = totalRaciones ? totalMontoNeto / totalRaciones : 0;
-
-  document.getElementById('metric-cards').innerHTML = [
-    { label: 'Total raciones', val: Math.round(totalRaciones).toLocaleString('es-AR') },
-    { label: 'Monto Neto AR$', val: fmtAR(totalMontoNeto) },
-    { label: 'Neto U$S', val: fmtUSD(totalNetoUsd) },
-    { label: 'AR$ / ración', val: fmtAR(precioPromAr) },
-  ].map(m => `<div class="metric"><label>${m.label}</label><div class="val">${m.val}</div></div>`).join('');
-
-  if (chartRaciones) chartRaciones.destroy();
-  if (chartPrecio) chartPrecio.destroy();
-
-  const chartLabels = periods.map(p => p.label);
-
-  chartRaciones = new Chart(document.getElementById('chart-raciones'), {
+  // Chart 2: SC vs SL
+  destroyChart('vssl');
+  charts.vssl = new Chart(document.getElementById('chart-vs-sl'), {
     type: 'bar',
     data: {
-      labels: chartLabels,
-      datasets: [{ label: 'Raciones', data: periods.map(p => Math.round(p.raciones)), backgroundColor: '#0078d4', borderRadius: 4 }]
+      labels,
+      datasets: [
+        { label: 'Sous Chef',    data: scData.map(d => Math.round(d.netoUsd)), backgroundColor: 'rgba(29,184,122,0.8)',  borderRadius: 2 },
+        { label: 'Social Lunch', data: slData.map(d => Math.round(d.netoUsd)), backgroundColor: 'rgba(59,142,240,0.6)',  borderRadius: 2 },
+      ],
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { autoSkip: true, maxRotation: 45, font: { size: 11 } }, grid: { display: false } },
-        y: { ticks: { font: { size: 11 }, callback: v => v.toLocaleString('es-AR') } }
-      }
-    }
+    options: { ...darkOpts(v => fmtUSD(v)), plugins: { legend: { display: true, labels: { color: '#8b90a0', font: { size: 11 }, boxWidth: 12 } } } },
   });
 
-  chartPrecio = new Chart(document.getElementById('chart-precio'), {
-    type: 'line',
+  // Chart 3: Top productos (acumulado años activos)
+  const prodMap = new Map();
+  activeYears.forEach(y => {
+    const m = allData.prodByYear[y];
+    if (!m) return;
+    m.forEach((v, k) => {
+      if (!prodMap.has(k)) prodMap.set(k, { raciones: 0, netoUsd: 0 });
+      const p = prodMap.get(k);
+      p.raciones += v.raciones;
+      p.netoUsd  += v.netoUsd;
+    });
+  });
+  const prods = [...prodMap.entries()]
+    .map(([name, v]) => ({ name, ...v }))
+    .filter(p => p.raciones > 0)
+    .sort((a, b) => b.raciones - a.raciones)
+    .slice(0, 12);
+
+  destroyChart('prod');
+  charts.prod = new Chart(document.getElementById('chart-productos'), {
+    type: 'bar',
     data: {
-      labels: chartLabels,
-      datasets: [{ label: 'Monto Neto AR$', data: periods.map(p => Math.round(p.montoNeto)), borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.08)', borderWidth: 2, pointRadius: 3, fill: true, tension: 0.3 }]
+      labels: prods.map(p => p.name),
+      datasets: [{ data: prods.map(p => Math.round(p.raciones)), backgroundColor: 'rgba(59,142,240,0.7)', borderRadius: 3 }],
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { autoSkip: true, maxRotation: 45, font: { size: 11 } }, grid: { display: false } },
-        y: { ticks: { font: { size: 11 }, callback: v => fmtAR(v) } }
-      }
-    }
+        x: { ticks: { color: '#8b90a0', font: { size: 10 }, callback: v => fmtN(v) }, grid: { color: '#2e3240' } },
+        y: { ticks: { color: '#e8eaf0', font: { size: 11 } }, grid: { display: false } },
+      },
+    },
   });
+}
 
-  document.getElementById('table-title').textContent = 'Resumen mensual — Semielaborados + Viandas vida util';
-  document.getElementById('data-table').innerHTML =
-    `<thead><tr><th>Período</th><th>Raciones</th><th>Monto Neto AR$</th><th>Neto U$S</th><th>AR$ / ración</th></tr></thead>` +
-    `<tbody>${periods.map(p => `<tr>
-      <td>${p.label}</td>
-      <td>${Math.round(p.raciones).toLocaleString('es-AR')}</td>
-      <td>${fmtAR(p.montoNeto)}</td>
-      <td>${fmtUSD(p.netoUsd)}</td>
-      <td>${fmtAR(p.raciones ? p.montoNeto / p.raciones : 0)}</td>
-    </tr>`).join('')}</tbody>`;
+function darkOpts(yFmt) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#8b90a0', font: { size: 11 }, autoSkip: true, maxRotation: 45 }, grid: { display: false } },
+      y: { ticks: { color: '#8b90a0', font: { size: 11 }, callback: yFmt }, grid: { color: '#2e3240' } },
+    },
+  };
+}
 
-  document.getElementById('footer-note').textContent =
-    `${rows.length.toLocaleString('es-AR')} registros · Semielaborados + Viandas vida util · Última actualización: ${new Date().toLocaleString('es-AR')}`;
-
-  showScreen('report-screen');
+function destroyChart(key) {
+  if (charts[key]) { charts[key].destroy(); delete charts[key]; }
 }
 
 (async () => {
   const handled = await handleCallback();
   if (!handled) {
     const stored = sessionStorage.getItem('ms_token');
-    if (stored) {
-      loadFile(stored);
-    } else {
-      showScreen('login-screen');
-    }
+    if (stored) loadFile(stored); else showScreen('login-screen');
   }
 })();
 </script>
