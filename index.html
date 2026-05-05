@@ -122,7 +122,7 @@
 <script>
 const CLIENT_ID = '48ad5a10-625f-492f-8564-60d612e5405f';
 const TENANT = '3b704bc6-f92b-4581-a329-e1d4afa9987a';
-const SCOPES = 'Files.Read User.Read';
+const SCOPES = 'Files.Read.All Sites.Read.All User.Read';
 const DRIVE_ID = 'b!pmFBZLuJVkeuGzPtHmyMtMnI1MPI-WtNtZQeYhwzMrCBd7CMfYuTQKSXTAwlNDU4';
 const ITEM_ID = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
 const REDIRECT = 'https://reporte-ventas-sc.vercel.app/';
@@ -246,7 +246,12 @@ async function loadFile(token) {
     const sheetName = wb.SheetNames.find(n => n.toLowerCase().includes('base')) || wb.SheetNames[0];
     const ws = wb.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    renderReport(rows, sheetName);
+    const tipoCol = Object.keys(rows[0] || {}).find(c => /tipo\s*de\s*producto/i.test(c));
+    const TIPOS = ['semielaborados', 'viandas vida util'];
+    const filtered = tipoCol
+      ? rows.filter(r => TIPOS.includes(String(r[tipoCol]).toLowerCase().trim()))
+      : rows;
+    renderReport(filtered, sheetName);
   } catch(e) {
     setError('No se pudo cargar el archivo. ' + e.message);
   }
