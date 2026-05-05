@@ -83,6 +83,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .client-table tbody tr:hover { background: rgba(255,255,255,0.03); }
 .client-table tbody tr.active-row { background: rgba(29,184,122,0.08); }
 .trend-up { color: var(--green); } .trend-down { color: var(--red); } .trend-flat { color: var(--text2); }
+.tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
+.tag-nuevo    { background: rgba(59,142,240,0.15);  color: #3b8ef0; }
+.tag-activo   { background: rgba(29,184,122,0.15);  color: #1db87a; }
+.tag-inactivo { background: rgba(255,180,0,0.15);   color: #ffb400; }
+.tag-churn    { background: rgba(224,82,82,0.15);   color: #e05252; }
 
 /* Charts */
 .charts-row { display: grid; gap: 12px; margin-bottom: 12px; }
@@ -633,13 +638,28 @@ function renderClients() {
   sel.onchange = () => renderWeeklyChart(sel.value, clientTotals);
   renderWeeklyChart(sel.value || sorted[0]?.[0], clientTotals);
 
-  // Summary table with last order date
+  const today = new Date();
+  function clientTag(rows) {
+    const validDates = rows.map(r => r.emision).filter(d => d instanceof Date && !isNaN(d));
+    if (!validDates.length) return '';
+    const first = new Date(Math.min(...validDates));
+    const last  = new Date(Math.max(...validDates));
+    const daysSinceLast  = (today - last)  / 86400000;
+    const daysSinceFirst = (today - first) / 86400000;
+    if (daysSinceFirst <= 30) return '<span class="tag tag-nuevo">Nuevo</span>';
+    if (daysSinceLast  <= 30) return '<span class="tag tag-activo">Activo</span>';
+    if (daysSinceLast  <= 90) return '<span class="tag tag-inactivo">Inactivo</span>';
+    return '<span class="tag tag-churn">Churn</span>';
+  }
+
   document.getElementById('tabla-clientes').innerHTML =
-    `<thead><tr><th>Cliente</th><th>Raciones</th><th>U$S</th><th>U$S / ración</th><th>Último pedido</th></tr></thead>` +
+    `<thead><tr><th>Cliente</th><th></th><th>Raciones</th><th>U$S</th><th>U$S / ración</th><th>Último pedido</th></tr></thead>` +
     `<tbody>${sorted.map(([name, d]) => {
-      const lastDate = d.rows.reduce((max, r) => r.emision > max ? r.emision : max, new Date(0));
+      const allDates = d.rows.map(r => r.emision).filter(d => d instanceof Date && !isNaN(d));
+      const lastDate = allDates.length ? new Date(Math.max(...allDates)) : null;
       return `<tr onclick="selectClient('${name.replace(/'/g,"\\'")}')">
         <td>${name}</td>
+        <td>${clientTag(d.rows)}</td>
         <td>${fmtN(Math.round(d.raciones))}</td>
         <td>${fmtN(Math.round(d.netoUsd))}</td>
         <td>${fmtN(d.raciones ? d.netoUsd / d.raciones : 0, 2)}</td>
