@@ -106,8 +106,8 @@
         <div class="chart-wrap"><canvas id="chart-raciones" role="img" aria-label="Raciones por período"></canvas></div>
       </div>
       <div class="chart-card">
-        <h3>Precio promedio AR$</h3>
-        <div class="chart-wrap"><canvas id="chart-precio" role="img" aria-label="Precio promedio AR$ por período"></canvas></div>
+        <h3>Monto Neto AR$ por período</h3>
+        <div class="chart-wrap"><canvas id="chart-precio" role="img" aria-label="Monto Neto AR$ por período"></canvas></div>
       </div>
     </div>
     <div class="table-card">
@@ -251,95 +251,108 @@ async function loadFile(token) {
     const filtered = tipoCol
       ? rows.filter(r => TIPOS.includes(String(r[tipoCol]).toLowerCase().trim()))
       : rows;
-    renderReport(filtered, sheetName);
+    renderReport(filtered);
   } catch(e) {
     setError('No se pudo cargar el archivo. ' + e.message);
   }
 }
 
-function fmt(v) {
-  if (v === null || v === undefined || v === '') return '—';
-  if (v instanceof Date) return v.toLocaleDateString('es-AR');
-  if (typeof v === 'number') return isNaN(v) ? '—' : v.toLocaleString('es-AR');
-  return String(v);
+function fmtAR(v) {
+  return '$' + Math.round(v).toLocaleString('es-AR');
 }
 
-function renderReport(rows, sheetName) {
-  if (!rows.length) { setError('La hoja "' + sheetName + '" no tiene datos.'); return; }
+function fmtUSD(v) {
+  return 'U$S ' + Math.round(v).toLocaleString('es-AR');
+}
 
-  const cols = Object.keys(rows[0]);
-  const racionCol = cols.find(c => /raci/i.test(c));
-  const arCol = cols.find(c => /prom.*ar|ar.*prom|precio.*ar|ar\$/i.test(c));
-  const usCol = cols.find(c => /prom.*u\$|u\$.*prom|precio.*u\$|u\$s/i.test(c));
-  const periodoCol = cols.find(c => /fecha|periodo|mes|recorrido/i.test(c)) || cols[0];
+function renderReport(rows) {
+  if (!rows.length) { setError('Sin datos para mostrar con el filtro aplicado.'); return; }
 
-  const numRows = rows.filter(r => racionCol && Number(r[racionCol]));
-  const totalRaciones = racionCol ? numRows.reduce((a,r) => a + (Number(r[racionCol]) || 0), 0) : null;
-  const avgAR = arCol ? rows.filter(r => Number(r[arCol])).reduce((a,r,_,arr) => a + Number(r[arCol])/arr.length, 0) : null;
-  const avgUS = usCol ? rows.filter(r => Number(r[usCol])).reduce((a,r,_,arr) => a + Number(r[usCol])/arr.length, 0) : null;
-
-  const cards = document.getElementById('metric-cards');
-  const metrics = [
-    { label: 'Registros', val: rows.length.toLocaleString('es-AR') },
-    totalRaciones !== null ? { label: 'Total raciones', val: Math.round(totalRaciones).toLocaleString('es-AR') } : null,
-    avgAR !== null ? { label: 'Prom. AR$', val: '$' + Math.round(avgAR).toLocaleString('es-AR') } : null,
-    avgUS !== null ? { label: 'Prom. U$S', val: 'U$S ' + avgUS.toFixed(2) } : null,
-  ].filter(Boolean);
-  cards.innerHTML = metrics.map(m => `<div class="metric"><label>${m.label}</label><div class="val">${m.val}</div></div>`).join('');
-
-  const labels = rows.map(r => {
-    const v = r[periodoCol];
-    if (v instanceof Date) return v.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
-    return String(v).slice(0, 10);
+  // Aggregate by Periodo fiscal (monthly)
+  const periodMap = new Map();
+  rows.forEach(r => {
+    const d = r['Periodo fiscal'];
+    let key, label;
+    if (d instanceof Date) {
+      key = d.toISOString().slice(0, 7);
+      label = d.toLocaleDateString('es-AR', { month: 'short', year: '2-digit' });
+    } else {
+      key = String(d).slice(0, 7);
+      label = key;
+    }
+    if (!periodMap.has(key)) periodMap.set(key, { label, raciones: 0, montoNeto: 0, netoUsd: 0 });
+    const p = periodMap.get(key);
+    p.raciones += Number(r['Raciones']) || 0;
+    p.montoNeto += Number(r['Monto Neto']) || 0;
+    p.netoUsd += Number(r['Neto u$s']) || 0;
   });
+
+  const periods = [...periodMap.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([, v]) => v);
+
+  const totalRaciones = periods.reduce((a, p) => a + p.raciones, 0);
+  const totalMontoNeto = periods.reduce((a, p) => a + p.montoNeto, 0);
+  const totalNetoUsd = periods.reduce((a, p) => a + p.netoUsd, 0);
+  const precioPromAr = totalRaciones ? totalMontoNeto / totalRaciones : 0;
+
+  document.getElementById('metric-cards').innerHTML = [
+    { label: 'Total raciones', val: Math.round(totalRaciones).toLocaleString('es-AR') },
+    { label: 'Monto Neto AR$', val: fmtAR(totalMontoNeto) },
+    { label: 'Neto U$S', val: fmtUSD(totalNetoUsd) },
+    { label: 'AR$ / ración', val: fmtAR(precioPromAr) },
+  ].map(m => `<div class="metric"><label>${m.label}</label><div class="val">${m.val}</div></div>`).join('');
 
   if (chartRaciones) chartRaciones.destroy();
   if (chartPrecio) chartPrecio.destroy();
 
-  if (racionCol) {
-    chartRaciones = new Chart(document.getElementById('chart-raciones'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{ label: 'Raciones', data: rows.map(r => Number(r[racionCol]) || 0), backgroundColor: '#0078d4', borderRadius: 4 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { autoSkip: true, maxRotation: 45, font: { size: 11 } }, grid: { display: false } },
-          y: { ticks: { font: { size: 11 } } }
-        }
-      }
-    });
-  }
+  const chartLabels = periods.map(p => p.label);
 
-  if (arCol) {
-    chartPrecio = new Chart(document.getElementById('chart-precio'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{ label: 'Precio AR$', data: rows.map(r => Number(r[arCol]) || 0), borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.08)', borderWidth: 2, pointRadius: 3, fill: true, tension: 0.3 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { autoSkip: true, maxRotation: 45, font: { size: 11 } }, grid: { display: false } },
-          y: { ticks: { font: { size: 11 } } }
-        }
+  chartRaciones = new Chart(document.getElementById('chart-raciones'), {
+    type: 'bar',
+    data: {
+      labels: chartLabels,
+      datasets: [{ label: 'Raciones', data: periods.map(p => Math.round(p.raciones)), backgroundColor: '#0078d4', borderRadius: 4 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { autoSkip: true, maxRotation: 45, font: { size: 11 } }, grid: { display: false } },
+        y: { ticks: { font: { size: 11 }, callback: v => v.toLocaleString('es-AR') } }
       }
-    });
-  }
+    }
+  });
 
-  const displayCols = cols.slice(0, 12);
-  document.getElementById('table-title').textContent = `Hoja: ${sheetName}`;
+  chartPrecio = new Chart(document.getElementById('chart-precio'), {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{ label: 'Monto Neto AR$', data: periods.map(p => Math.round(p.montoNeto)), borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.08)', borderWidth: 2, pointRadius: 3, fill: true, tension: 0.3 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { autoSkip: true, maxRotation: 45, font: { size: 11 } }, grid: { display: false } },
+        y: { ticks: { font: { size: 11 }, callback: v => fmtAR(v) } }
+      }
+    }
+  });
+
+  document.getElementById('table-title').textContent = 'Resumen mensual — Semielaborados + Viandas vida util';
   document.getElementById('data-table').innerHTML =
-    `<thead><tr>${displayCols.map(c => `<th>${c}</th>`).join('')}</tr></thead>` +
-    `<tbody>${rows.slice(0, 200).map(r => `<tr>${displayCols.map(c => `<td>${fmt(r[c])}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    `<thead><tr><th>Período</th><th>Raciones</th><th>Monto Neto AR$</th><th>Neto U$S</th><th>AR$ / ración</th></tr></thead>` +
+    `<tbody>${periods.map(p => `<tr>
+      <td>${p.label}</td>
+      <td>${Math.round(p.raciones).toLocaleString('es-AR')}</td>
+      <td>${fmtAR(p.montoNeto)}</td>
+      <td>${fmtUSD(p.netoUsd)}</td>
+      <td>${fmtAR(p.raciones ? p.montoNeto / p.raciones : 0)}</td>
+    </tr>`).join('')}</tbody>`;
 
   document.getElementById('footer-note').textContent =
-    `Mostrando ${Math.min(200, rows.length)} de ${rows.length} filas · ${cols.length} columnas · Última actualización: ${new Date().toLocaleString('es-AR')}`;
+    `${rows.length.toLocaleString('es-AR')} registros · Semielaborados + Viandas vida util · Última actualización: ${new Date().toLocaleString('es-AR')}`;
 
   showScreen('report-screen');
 }
