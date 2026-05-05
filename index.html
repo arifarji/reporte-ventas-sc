@@ -125,9 +125,21 @@ const TENANT = '3b704bc6-f92b-4581-a329-e1d4afa9987a';
 const SCOPES = 'Files.Read.All Sites.Read.All User.Read';
 const DRIVE_ID = 'b!pmFBZLuJVkeuGzPtHmyMtMnI1MPI-WtNtZQeYhwzMrCBd7CMfYuTQKSXTAwlNDU4';
 const ITEM_ID = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
-const REDIRECT = 'https://reporte-ventas-sc.vercel.app/reporte_ventas.html';
+const REDIRECT = 'https://reporte-ventas-sc.vercel.app/';
 
 let chartRaciones, chartPrecio;
+
+// --- PKCE helpers ---
+function b64url(buffer) {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function generatePKCE() {
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  return { verifier, challenge: b64url(digest) };
+}
 
 function showScreen(id) {
   ['login-screen','loading-screen','error-screen','report-screen'].forEach(s => {
@@ -145,30 +157,65 @@ function setError(msg) {
   document.getElementById('error-msg').textContent = msg;
 }
 
-function doLogin() {
-  const state = Math.random().toString(36).slice(2);
+async function doLogin() {
+  const { verifier, challenge } = await generatePKCE();
+  const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
+  sessionStorage.setItem('pkce_verifier', verifier);
   sessionStorage.setItem('oauth_state', state);
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
-    response_type: 'token',
+    response_type: 'code',
     redirect_uri: REDIRECT,
     scope: SCOPES,
-    state: state,
-    nonce: state,
+    state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
   });
   window.location.href = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/authorize?${params}`;
 }
 
-function parseHash() {
-  const hash = window.location.hash.slice(1);
-  if (!hash) return null;
-  const p = new URLSearchParams(hash);
-  const token = p.get('access_token');
-  if (token) {
-    history.replaceState(null, '', window.location.pathname);
-    return token;
+async function exchangeCode(code) {
+  const verifier = sessionStorage.getItem('pkce_verifier');
+  if (!verifier) throw new Error('PKCE verifier no encontrado. Intentá iniciar sesión de nuevo.');
+  const body = new URLSearchParams({
+    client_id: CLIENT_ID,
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: REDIRECT,
+    code_verifier: verifier,
+  });
+  const res = await fetch(`https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error_description || `Error ${res.status} al obtener token`);
+  sessionStorage.removeItem('pkce_verifier');
+  sessionStorage.removeItem('oauth_state');
+  return data.access_token;
+}
+
+async function handleCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  const error = params.get('error');
+  if (error) {
+    setError(`Error de autenticación: ${params.get('error_description') || error}`);
+    return true;
   }
-  return null;
+  if (!code) return false;
+  if (state !== sessionStorage.getItem('oauth_state')) {
+    setError('Error de seguridad: state inválido. Intentá de nuevo.');
+    return true;
+  }
+  history.replaceState(null, '', window.location.pathname);
+  setLoading('Autenticando...');
+  const token = await exchangeCode(code);
+  sessionStorage.setItem('ms_token', token);
+  await loadFile(token);
+  return true;
 }
 
 async function getUser(token) {
@@ -292,18 +339,17 @@ function renderReport(rows, sheetName) {
   showScreen('report-screen');
 }
 
-const token = parseHash();
-if (token) {
-  sessionStorage.setItem('ms_token', token);
-  loadFile(token);
-} else {
-  const stored = sessionStorage.getItem('ms_token');
-  if (stored) {
-    loadFile(stored);
-  } else {
-    showScreen('login-screen');
+(async () => {
+  const handled = await handleCallback();
+  if (!handled) {
+    const stored = sessionStorage.getItem('ms_token');
+    if (stored) {
+      loadFile(stored);
+    } else {
+      showScreen('login-screen');
+    }
   }
-}
+})();
 </script>
 </body>
 </html>
