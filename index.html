@@ -587,15 +587,30 @@ function renderAll() {
       ${c.delta ? `<div class="kpi-delta">${c.delta} <span style="color:var(--text2);font-size:11px">${c.hint}</span></div>` : ''}
     </div>`).join('');
 
-  // Chart 1: Facturación mensual
+  // Chart 1: Facturación mensual + Raciones
   document.getElementById('title-facturacion').textContent =
-    `Facturación mensual ${currency==='usd'?'U$S':'AR$'} — Sous Chef`;
-  const factVals = scData.map(d => Math.round(currency==='usd' ? d.netoUsd : d.montoNeto));
+    `Facturación mensual ${currency==='usd'?'U$S':'AR$'} y Raciones — Sous Chef`;
+  const factVals   = scData.map(d => Math.round(currency==='usd' ? d.netoUsd : d.montoNeto));
+  const racionVals = scData.map(d => Math.round(d.raciones));
   destroyChart('fact');
   charts.fact = new Chart(document.getElementById('chart-facturacion'), {
     type: 'bar',
-    data: { labels, datasets: [{ data: factVals, backgroundColor: 'rgba(29,184,122,0.75)', borderColor: '#1db87a', borderWidth: 1, borderRadius: 3 }] },
-    options: darkOpts(v => currency==='usd' ? fmtUSD(v) : fmtAR(v)),
+    data: {
+      labels,
+      datasets: [
+        { label: currency==='usd'?'U$S':'AR$', data: factVals, backgroundColor: 'rgba(29,184,122,0.75)', borderColor: '#1db87a', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
+        { label: 'Raciones', data: racionVals, type: 'line', borderColor: '#3b8ef0', backgroundColor: 'rgba(59,142,240,0.15)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#3b8ef0', tension: 0.3, yAxisID: 'y2' },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: '#8b90a0', font: { size: 11 }, boxWidth: 12 } } },
+      scales: {
+        x:  { ticks: { color: '#8b90a0', font: { size: 11 }, autoSkip: true, maxRotation: 45 }, grid: { display: false } },
+        y:  { ticks: { color: '#8b90a0', font: { size: 11 }, callback: v => currency==='usd' ? fmtUSD(v) : fmtAR(v) }, grid: { color: '#2e3240' }, position: 'left' },
+        y2: { ticks: { color: '#3b8ef0', font: { size: 11 }, callback: v => fmtN(v) }, grid: { display: false }, position: 'right' },
+      },
+    },
   });
 
   // Chart 2: SC vs SL
