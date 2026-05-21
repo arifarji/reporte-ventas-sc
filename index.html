@@ -511,7 +511,7 @@ function renderAll() {
 }
 
 function renderKPICards(kpis, lbl) {
-  const { ccc, totalUsd, totalArs, clientesNuevos, retencion, churnPct, tcMep } = kpis;
+  const { ccc, totalUsd, totalArs, clientesNuevos, retencion, churnPct, retenidosN, churnN, tcMep } = kpis;
 
   const card = c => `
     <div class="kpi-card${c.highlight ? ' highlight' : ''}">
