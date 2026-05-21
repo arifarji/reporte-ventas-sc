@@ -284,13 +284,27 @@ async function fetchShareFile(token, shareUrl) {
   });
 }
 
+// Parses dates in multiple formats: JS Date, ISO string, DD-MM-YYYY, DD/MM/YYYY
+function parseFlexDate(raw) {
+  if (!raw) return null;
+  if (raw instanceof Date) return isNaN(raw) ? null : raw;
+  const s = String(raw).trim();
+  // DD-MM-YYYY or DD/MM/YYYY
+  const dmy = s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if (dmy) {
+    const d = new Date(+dmy[3], +dmy[2] - 1, +dmy[1]);
+    return isNaN(d) ? null : d;
+  }
+  // YYYY-MM-DD and other browser-native formats
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+
 function parseConsumosWorkbook(wb) {
-  // Pick first sheet (or one named Base/Consumo/Base)
-  const sheetName = wb.SheetNames.find(s => /base|consumo/i.test(s)) || wb.SheetNames[0];
+  const sheetName = wb.SheetNames.find(s => /base/i.test(s)) || wb.SheetNames[0];
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
   if (!rows.length) return null;
 
-  // Auto-detect columns
   const headers = Object.keys(rows[0]);
   const h = headers.map(x => String(x).toLowerCase().trim());
   const find = (...cands) => {
@@ -303,22 +317,25 @@ function parseConsumosWorkbook(wb) {
     raciones: find('raciones', 'racion', 'cantidad', 'unidades', 'qty', 'porcion'),
     udn:      find('udn', 'negocio', 'empresa', 'division'),
   };
-  console.log('[consumos] sheet:', sheetName, '| columnas detectadas:', COL);
 
-  // Filter Sous Chef if UDN column exists
+  // Debug first row so we can verify in console
+  console.log('[consumos] sheet:', sheetName);
+  console.log('[consumos] columnas detectadas:', COL);
+  console.log('[consumos] primera fila raw:', rows[0]);
+
   const scRows = COL.udn
     ? rows.filter(r => String(r[COL.udn]).trim() === 'Sous Chef')
     : rows;
 
+  let skipped = 0;
   const clientsByMonth  = {};
   const clientFirstMonth = {};
-  const clientMonthData = {};  // mKey -> { clientName -> {raciones, lastDate} }
+  const clientMonthData = {};
   const clientLastDate  = {};
 
   scRows.forEach(r => {
-    const raw  = COL.fecha ? r[COL.fecha] : null;
-    const date = raw instanceof Date ? raw : (raw ? new Date(raw) : null);
-    if (!date || isNaN(date)) return;
+    const date = parseFlexDate(COL.fecha ? r[COL.fecha] : null);
+    if (!date) { skipped++; return; }
 
     const mKey    = periodKey(date);
     const client  = COL.cliente ? (String(r[COL.cliente]).trim() || 'Sin nombre') : 'Sin nombre';
@@ -339,7 +356,8 @@ function parseConsumosWorkbook(wb) {
   });
 
   const allMonths = [...new Set(Object.keys(clientsByMonth))].sort();
-  console.log('[consumos] meses:', allMonths, '| clientes únicos:', Object.keys(clientFirstMonth).length);
+  console.log('[consumos] meses:', allMonths);
+  console.log('[consumos] clientes únicos:', Object.keys(clientFirstMonth).length, '| filas salteadas:', skipped);
   return { clientsByMonth, clientFirstMonth, clientMonthData, clientLastDate, allMonths };
 }
 
