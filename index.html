@@ -154,12 +154,14 @@ const SCOPES   = 'Files.Read.All Sites.Read.All User.Read';
 const DRIVE_ID = 'b!pmFBZLuJVkeuGzPtHmyMtMnI1MPI-WtNtZQeYhwzMrCBd7CMfYuTQKSXTAwlNDU4';
 const ITEM_ID  = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
 const REDIRECT = 'https://reporte-ventas-sc.vercel.app/';
+const CONSUMOS_SHARE_URL = 'https://grupotronchetto-my.sharepoint.com/:x:/r/personal/ariel_farji_tronchetto_com_ar/_layouts/15/Doc.aspx?sourcedoc=%7B9D156B9E-4224-4565-BFF3-376D166EB1EC%7D&file=consumosEneroalprincipiodeMayo.xlsx&action=default&mobileredirect=true';
 
-let currency      = 'usd';
-let activeYear    = null;   // fiscal year number or null = all
-let activeMonthKey = null;  // 'YYYY-MM' or null = all months in year
-let allData = null;
-let charts  = {};
+let currency       = 'usd';
+let activeYear     = null;   // fiscal year number or null = all
+let activeMonthKey = null;   // 'YYYY-MM' or null = all months in year
+let allData      = null;     // ventas file: billing data
+let consumosData = null;     // consumos file: client activity + raciones
+let charts       = {};
 
 // --- PKCE ---
 function b64url(buf) {
@@ -275,6 +277,72 @@ function parseMEP(ws) {
   return mep;
 }
 
+async function fetchShareFile(token, shareUrl) {
+  const encoded = 'u!' + btoa(shareUrl).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  return fetch(`https://graph.microsoft.com/v1.0/shares/${encoded}/driveItem/content`, {
+    headers: { Authorization: 'Bearer ' + token }
+  });
+}
+
+function parseConsumosWorkbook(wb) {
+  // Pick first sheet (or one named Base/Consumo/Base)
+  const sheetName = wb.SheetNames.find(s => /base|consumo/i.test(s)) || wb.SheetNames[0];
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+  if (!rows.length) return null;
+
+  // Auto-detect columns
+  const headers = Object.keys(rows[0]);
+  const h = headers.map(x => String(x).toLowerCase().trim());
+  const find = (...cands) => {
+    const idx = h.findIndex(col => cands.some(c => col.includes(c)));
+    return idx >= 0 ? headers[idx] : null;
+  };
+  const COL = {
+    fecha:    find('fecha', 'emision', 'date', 'periodo fiscal', 'período'),
+    cliente:  find('fantasia', 'cliente', 'razon', 'nombre'),
+    raciones: find('racion', 'cantidad', 'unidades', 'qty', 'porcion', 'ración'),
+    udn:      find('udn', 'negocio', 'empresa', 'division'),
+  };
+  console.log('[consumos] sheet:', sheetName, '| columnas detectadas:', COL);
+
+  // Filter Sous Chef if UDN column exists
+  const scRows = COL.udn
+    ? rows.filter(r => String(r[COL.udn]).trim() === 'Sous Chef')
+    : rows;
+
+  const clientsByMonth  = {};
+  const clientFirstMonth = {};
+  const clientMonthData = {};  // mKey -> { clientName -> {raciones, lastDate} }
+  const clientLastDate  = {};
+
+  scRows.forEach(r => {
+    const raw  = COL.fecha ? r[COL.fecha] : null;
+    const date = raw instanceof Date ? raw : (raw ? new Date(raw) : null);
+    if (!date || isNaN(date)) return;
+
+    const mKey    = periodKey(date);
+    const client  = COL.cliente ? (String(r[COL.cliente]).trim() || 'Sin nombre') : 'Sin nombre';
+    const raciones = COL.raciones ? (Number(r[COL.raciones]) || 0) : 1;
+
+    if (!clientsByMonth[mKey]) clientsByMonth[mKey] = new Set();
+    clientsByMonth[mKey].add(client);
+
+    if (!clientFirstMonth[client] || mKey < clientFirstMonth[client]) clientFirstMonth[client] = mKey;
+
+    if (!clientMonthData[mKey]) clientMonthData[mKey] = {};
+    if (!clientMonthData[mKey][client]) clientMonthData[mKey][client] = { raciones: 0, lastDate: null };
+    const cd = clientMonthData[mKey][client];
+    cd.raciones += raciones;
+    if (!cd.lastDate || date > cd.lastDate) cd.lastDate = date;
+
+    if (!clientLastDate[client] || date > clientLastDate[client]) clientLastDate[client] = date;
+  });
+
+  const allMonths = [...new Set(Object.keys(clientsByMonth))].sort();
+  console.log('[consumos] meses:', allMonths, '| clientes únicos:', Object.keys(clientFirstMonth).length);
+  return { clientsByMonth, clientFirstMonth, clientMonthData, clientLastDate, allMonths };
+}
+
 async function loadFile(token) {
   setLoading('Descargando archivo desde SharePoint...');
   try {
@@ -286,22 +354,30 @@ async function loadFile(token) {
       document.getElementById('user-name').textContent = user.displayName || user.userPrincipalName;
     }
 
-    const url = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${ITEM_ID}/content`;
-    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-    if (res.status === 401) { showScreen('login-screen'); return; }
-    if (!res.ok) throw new Error(`Error ${res.status}: ${res.statusText}`);
+    // Fetch both files in parallel
+    setLoading('Descargando archivos...');
+    const ventasUrl = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${ITEM_ID}/content`;
+    const [ventasRes, consumosRes] = await Promise.all([
+      fetch(ventasUrl, { headers: { Authorization: 'Bearer ' + token } }),
+      fetchShareFile(token, CONSUMOS_SHARE_URL).catch(() => null),
+    ]);
+
+    if (ventasRes.status === 401) { showScreen('login-screen'); return; }
+    if (!ventasRes.ok) throw new Error(`Error ventas ${ventasRes.status}: ${ventasRes.statusText}`);
 
     setLoading('Procesando datos...');
-    const buf = await res.arrayBuffer();
-    const wb  = XLSX.read(buf, { type: 'array', cellDates: true });
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets['Base'], { defval: '' });
+
+    // --- Parse ventas file ---
+    const ventasBuf = await ventasRes.arrayBuffer();
+    const ventasWb  = XLSX.read(ventasBuf, { type: 'array', cellDates: true });
+    const rows = XLSX.utils.sheet_to_json(ventasWb.Sheets['Base'], { defval: '' });
     const scRows = rows.filter(r => String(r['UDN']).trim() === 'Sous Chef');
 
-    const scMonthly          = new Map(); // monthKey -> {montoNeto, netoUsd}
-    const clientsByMonth     = {};        // monthKey -> Set<clientName>
-    const clientFirstMonth   = {};        // clientName -> earliest monthKey
-    const clientMonthData    = {};        // monthKey -> { clientName -> {netoUsd, montoNeto, lastPurchase} }
-    const clientLastPurchase = {};        // clientName -> Date (most recent purchase ever)
+    const scMonthly          = new Map();
+    const clientsByMonth     = {};
+    const clientFirstMonth   = {};
+    const clientMonthData    = {};
+    const clientLastPurchase = {};
 
     scRows.forEach(r => {
       const mKey   = periodKey(r['Periodo fiscal']);
@@ -311,38 +387,25 @@ async function loadFile(token) {
       const emision = r['Emision'] instanceof Date ? r['Emision'] : new Date(r['Emision']);
       const emOk   = !isNaN(emision);
 
-      // Monthly totals
       if (!scMonthly.has(mKey)) scMonthly.set(mKey, { montoNeto: 0, netoUsd: 0 });
-      const sm = scMonthly.get(mKey);
-      sm.montoNeto += ars;
-      sm.netoUsd   += usd;
+      const sm = scMonthly.get(mKey); sm.montoNeto += ars; sm.netoUsd += usd;
 
-      // Client sets per month
       if (!clientsByMonth[mKey]) clientsByMonth[mKey] = new Set();
       clientsByMonth[mKey].add(client);
-
-      // First purchase per client
       if (!clientFirstMonth[client] || mKey < clientFirstMonth[client]) clientFirstMonth[client] = mKey;
 
-      // Per-client billing per month
       if (!clientMonthData[mKey]) clientMonthData[mKey] = {};
       if (!clientMonthData[mKey][client]) clientMonthData[mKey][client] = { netoUsd: 0, montoNeto: 0, lastPurchase: null };
       const cd = clientMonthData[mKey][client];
-      cd.netoUsd   += usd;
-      cd.montoNeto += ars;
+      cd.netoUsd += usd; cd.montoNeto += ars;
       if (emOk && (!cd.lastPurchase || emision > cd.lastPurchase)) cd.lastPurchase = emision;
-
-      // Overall last purchase per client
-      if (emOk && (!clientLastPurchase[client] || emision > clientLastPurchase[client])) {
-        clientLastPurchase[client] = emision;
-      }
+      if (emOk && (!clientLastPurchase[client] || emision > clientLastPurchase[client])) clientLastPurchase[client] = emision;
     });
 
-    const mepData    = wb.Sheets['Indices'] ? parseMEP(wb.Sheets['Indices']) : new Map();
-    const allMonths  = [...scMonthly.keys()].sort();
+    const mepData     = ventasWb.Sheets['Indices'] ? parseMEP(ventasWb.Sheets['Indices']) : new Map();
+    const allMonths   = [...scMonthly.keys()].sort();
     const fiscalYears = [...new Set(allMonths.map(k => fiscalYear(k)))].sort((a, b) => b - a);
 
-    // Default to last complete month
     const nowKey     = new Date().toISOString().slice(0, 7);
     const completed  = allMonths.filter(k => k < nowKey);
     const defaultKey = completed.length ? completed[completed.length - 1] : allMonths[allMonths.length - 1];
@@ -351,6 +414,22 @@ async function loadFile(token) {
     activeMonthKey = defaultKey;
 
     allData = { scMonthly, mepData, clientsByMonth, clientFirstMonth, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
+
+    // --- Parse consumos file (optional) ---
+    if (consumosRes && consumosRes.ok) {
+      try {
+        const consumosBuf = await consumosRes.arrayBuffer();
+        const consumosWb  = XLSX.read(consumosBuf, { type: 'array', cellDates: true });
+        consumosData = parseConsumosWorkbook(consumosWb);
+      } catch(e) {
+        console.warn('Error parseando consumos:', e.message);
+        consumosData = null;
+      }
+    } else {
+      console.warn('No se pudo acceder al archivo de consumos:', consumosRes?.status);
+      consumosData = null;
+    }
+
     buildDashboard();
   } catch(e) {
     setError('No se pudo cargar el archivo. ' + e.message);
@@ -372,9 +451,16 @@ function getChartMonths() {
 }
 
 // --- KPI calculation ---
+// CCC and retention come from consumosData if available, else fall back to allData
+function cccSource() {
+  return consumosData || allData;
+}
+
 function calcKPIs(periodKeys) {
+  const src = cccSource();
+
   const clients = new Set();
-  periodKeys.forEach(k => { (allData.clientsByMonth[k] || new Set()).forEach(c => clients.add(c)); });
+  periodKeys.forEach(k => { (src.clientsByMonth[k] || new Set()).forEach(c => clients.add(c)); });
   const ccc = clients.size;
 
   let totalUsd = 0, totalArs = 0;
@@ -384,27 +470,28 @@ function calcKPIs(periodKeys) {
     totalArs += d.montoNeto || 0;
   });
 
-  const clientesNuevos = [...clients].filter(c => periodKeys.includes(allData.clientFirstMonth[c])).length;
+  const clientesNuevos = [...clients].filter(c => periodKeys.includes(src.clientFirstMonth[c])).length;
 
-  let retencion = null, churnPct = null;
+  let retencion = null, churnPct = null, retenidosN = null, churnN = null;
   if (periodKeys.length === 1) {
-    const prevKey    = prevMonthKey(periodKeys[0]);
-    const prevSet    = allData.clientsByMonth[prevKey] || new Set();
+    const prevKey = prevMonthKey(periodKeys[0]);
+    const prevSet = src.clientsByMonth[prevKey] || new Set();
     if (prevSet.size > 0) {
       const retained = [...prevSet].filter(c => clients.has(c)).length;
-      retencion = retained / prevSet.size * 100;
-      churnPct  = 100 - retencion;
+      retenidosN = retained;
+      churnN     = prevSet.size - retained;
+      retencion  = retained / prevSet.size * 100;
+      churnPct   = 100 - retencion;
     }
   }
 
-  // TC MEP: use the selected month if single, otherwise latest available
   let tcMep = periodKeys.length === 1 ? (allData.mepData.get(periodKeys[0]) || null) : null;
   if (!tcMep) {
     const mepKeys = [...allData.mepData.keys()].sort();
     if (mepKeys.length) tcMep = allData.mepData.get(mepKeys[mepKeys.length - 1]);
   }
 
-  return { ccc, totalUsd, totalArs, clientesNuevos, retencion, churnPct, tcMep };
+  return { ccc, totalUsd, totalArs, clientesNuevos, retencion, churnPct, retenidosN, churnN, tcMep };
 }
 
 // --- Render ---
@@ -449,7 +536,9 @@ function renderKPICards(kpis, lbl) {
     {
       label: '% Retención',
       main: retencion !== null ? `${retencion.toFixed(1)}%` : '—',
-      sub: retencion !== null ? `${churnPct.toFixed(1)}% churn` : 'Seleccioná un mes para ver retención',
+      sub: retencion !== null
+        ? `${retenidosN} retenidos · ${churnN} churn`
+        : 'Seleccioná un mes para ver retención',
     },
   ].map(card).join('');
 }
@@ -464,7 +553,7 @@ function renderFacturacionChart(periodKeys) {
     const d = allData.scMonthly.get(k) || {};
     return Math.round(currency === 'usd' ? (d.netoUsd || 0) : (d.montoNeto || 0));
   });
-  const cccVals  = months.map(k => (allData.clientsByMonth[k] || new Set()).size);
+  const cccVals  = months.map(k => (cccSource().clientsByMonth[k] || new Set()).size);
   const bgColors = months.map(k =>
     periodKeys.includes(k) ? 'rgba(29,184,122,0.85)' : 'rgba(29,184,122,0.3)'
   );
@@ -493,16 +582,17 @@ function renderFacturacionChart(periodKeys) {
 
 function renderMovimientosChart() {
   const months = getChartMonths();
+  const src    = cccSource();
 
   const nuevosVals = months.map(k => {
-    const cs = allData.clientsByMonth[k] || new Set();
-    return [...cs].filter(c => allData.clientFirstMonth[c] === k).length;
+    const cs = src.clientsByMonth[k] || new Set();
+    return [...cs].filter(c => src.clientFirstMonth[c] === k).length;
   });
 
   const churnVals = months.map(k => {
     const prevKey = prevMonthKey(k);
-    const prev    = allData.clientsByMonth[prevKey] || new Set();
-    const curr    = allData.clientsByMonth[k]       || new Set();
+    const prev    = src.clientsByMonth[prevKey] || new Set();
+    const curr    = src.clientsByMonth[k]       || new Set();
     return [...prev].filter(c => !curr.has(c)).length;
   });
 
@@ -531,83 +621,125 @@ function renderMovimientosChart() {
 }
 
 function renderClientTable(periodKeys) {
-  // Clients that bought in the period
+  const src   = cccSource();  // consumosData if available, else allData
+  const today = new Date();
+
+  // --- Clients that were active in the period (from primary source) ---
+  const activeInPeriod = new Set();
+  periodKeys.forEach(k => (src.clientsByMonth[k] || new Set()).forEach(c => activeInPeriod.add(c)));
+
+  // Build per-client aggregated data
   const clientData = {};
+  activeInPeriod.forEach(name => {
+    clientData[name] = { raciones: 0, netoUsd: 0, montoNeto: 0, lastDate: null };
+  });
+
   periodKeys.forEach(mKey => {
-    Object.entries(allData.clientMonthData[mKey] || {}).forEach(([name, data]) => {
-      if (!clientData[name]) clientData[name] = { netoUsd: 0, montoNeto: 0, lastPurchase: null };
-      const cd = clientData[name];
-      cd.netoUsd   += data.netoUsd;
-      cd.montoNeto += data.montoNeto;
-      if (data.lastPurchase && (!cd.lastPurchase || data.lastPurchase > cd.lastPurchase)) cd.lastPurchase = data.lastPurchase;
+    // Raciones from consumos (if available)
+    if (consumosData) {
+      Object.entries(consumosData.clientMonthData[mKey] || {}).forEach(([name, d]) => {
+        if (!clientData[name]) return;
+        clientData[name].raciones += d.raciones;
+        if (d.lastDate && (!clientData[name].lastDate || d.lastDate > clientData[name].lastDate))
+          clientData[name].lastDate = d.lastDate;
+      });
+    }
+    // Billing from ventas
+    Object.entries(allData.clientMonthData[mKey] || {}).forEach(([name, d]) => {
+      if (!clientData[name]) return;
+      clientData[name].netoUsd   += d.netoUsd;
+      clientData[name].montoNeto += d.montoNeto;
+      if (d.lastPurchase && (!clientData[name].lastDate || d.lastPurchase > clientData[name].lastDate))
+        clientData[name].lastDate = d.lastPurchase;
     });
   });
 
-  const sorted = Object.entries(clientData).sort((a, b) => b[1].netoUsd - a[1].netoUsd);
-  const today  = new Date();
+  // Sort by raciones (consumos) or USD (ventas)
+  const sorted = Object.entries(clientData).sort((a, b) =>
+    consumosData ? b[1].raciones - a[1].raciones : b[1].netoUsd - a[1].netoUsd
+  );
 
   function getBuyerTag(name) {
     if (periodKeys.length === 1) {
-      return allData.clientFirstMonth[name] === periodKeys[0]
+      return src.clientFirstMonth[name] === periodKeys[0]
         ? '<span class="tag tag-nuevo">Nuevo</span>'
         : '<span class="tag tag-activo">Activo</span>';
     }
-    const last = allData.clientLastPurchase[name];
+    const last = consumosData ? consumosData.clientLastDate[name] : allData.clientLastPurchase[name];
     if (!last) return '';
     const days = (today - last) / 86400000;
-    if (days <= 30)  return '<span class="tag tag-activo">Activo</span>';
-    if (days <= 90)  return '<span class="tag tag-inactivo">Inactivo</span>';
+    if (days <= 30) return '<span class="tag tag-activo">Activo</span>';
+    if (days <= 90) return '<span class="tag tag-inactivo">Inactivo</span>';
     return '<span class="tag tag-churn">Churn</span>';
   }
 
-  // Clients that have bought before but NOT in this period
-  const nonBuyers = Object.keys(allData.clientFirstMonth)
-    .filter(name => !clientData[name])
+  // --- Clients that exist in history but NOT active this period ---
+  const allKnown = Object.keys(src.clientFirstMonth);
+  const nonBuyers = allKnown
+    .filter(name => !activeInPeriod.has(name))
     .map(name => {
-      const last = allData.clientLastPurchase[name];
+      const last = consumosData ? consumosData.clientLastDate[name] : allData.clientLastPurchase[name];
       const days = last ? (today - last) / 86400000 : Infinity;
       const tag  = days <= 90
         ? '<span class="tag tag-inactivo">Inactivo</span>'
         : '<span class="tag tag-churn">Churn</span>';
       return { name, last, days, tag };
     })
-    .sort((a, b) => a.days - b.days); // most recently inactive first
+    .sort((a, b) => a.days - b.days);
+
+  // Validation flags: clients only in consumos / only in ventas
+  const ventasClients = new Set();
+  periodKeys.forEach(k => (allData.clientsByMonth[k] || new Set()).forEach(c => ventasClients.add(c)));
+
+  function validationFlag(name) {
+    if (!consumosData) return '';
+    const inConsumos = activeInPeriod.has(name);
+    const inVentas   = ventasClients.has(name);
+    if (inConsumos && !inVentas) return ' <span class="tag" style="background:rgba(255,180,0,0.15);color:#ffb400">sin factura</span>';
+    if (!inConsumos && inVentas) return ' <span class="tag" style="background:rgba(224,82,82,0.15);color:#e05252">sin consumo</span>';
+    return '';
+  }
+
+  const showRaciones = !!consumosData;
+  const colSpan = showRaciones ? 7 : 6;
 
   document.getElementById('title-clientes').textContent =
-    `Clientes del período — ${sorted.length} CCC + ${nonBuyers.length} sin compra`;
+    `Clientes del período — ${sorted.length} CCC · ${nonBuyers.length} sin compra` +
+    (consumosData ? ' · consumos ✓' : ' · solo facturación');
+
+  const thead = `<thead><tr>
+    <th>#</th><th>Cliente</th><th></th>
+    ${showRaciones ? '<th>Raciones</th>' : ''}
+    <th>Fact. USD</th><th>Fact. ARS</th>
+    <th>Último registro</th>
+  </tr></thead>`;
 
   const buyerRows = sorted.map(([name, d], i) => `
     <tr>
       <td class="idx">${i + 1}</td>
-      <td>${name}</td>
+      <td>${name}${validationFlag(name)}</td>
       <td>${getBuyerTag(name)}</td>
-      <td>U$S ${fmtN(Math.round(d.netoUsd))}</td>
-      <td>${fmtAR(d.montoNeto)}</td>
-      <td>${fmtDate(d.lastPurchase)}</td>
+      ${showRaciones ? `<td>${fmtN(Math.round(d.raciones))}</td>` : ''}
+      <td>${d.netoUsd ? 'U$S ' + fmtN(Math.round(d.netoUsd)) : '—'}</td>
+      <td>${d.montoNeto ? fmtAR(d.montoNeto) : '—'}</td>
+      <td>${fmtDate(d.lastDate)}</td>
     </tr>`).join('');
 
   const sepRow = nonBuyers.length ? `
-    <tr class="sep">
-      <td colspan="6">Sin compra en el período (${nonBuyers.length})</td>
-    </tr>` : '';
+    <tr class="sep"><td colspan="${colSpan}">Sin compra en el período (${nonBuyers.length})</td></tr>` : '';
 
   const nonBuyerRows = nonBuyers.map(({ name, last, tag }, i) => `
     <tr class="no-compra">
       <td class="idx">${sorted.length + i + 1}</td>
       <td>${name}</td>
       <td>${tag}</td>
-      <td>—</td>
-      <td>—</td>
+      ${showRaciones ? '<td>—</td>' : ''}
+      <td>—</td><td>—</td>
       <td>${fmtDate(last)}</td>
     </tr>`).join('');
 
   document.getElementById('tabla-clientes').innerHTML =
-    `<thead><tr>
-      <th>#</th><th>Cliente</th><th></th>
-      <th>Fact. USD</th><th>Fact. ARS</th>
-      <th>Último pago</th>
-    </tr></thead>` +
-    `<tbody>${buyerRows}${sepRow}${nonBuyerRows}</tbody>`;
+    thead + `<tbody>${buyerRows}${sepRow}${nonBuyerRows}</tbody>`;
 }
 
 // --- Dashboard setup ---
