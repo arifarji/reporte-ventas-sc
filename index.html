@@ -340,15 +340,15 @@ function parseConsumosWorkbook(wb) {
 
   console.log('[consumos] sheet:', sheetName, '| columnas:', COL);
 
+  const scRows = COL.udn
+    ? rows.filter(r => String(r[COL.udn]).trim() === 'Sous Chef')
+    : rows;
+
   // Log all unique raw client names so we can catch missing normalizations
   if (COL.cliente) {
     const rawNames = [...new Set(scRows.map(r => String(r[COL.cliente]).trim()))].sort();
     console.log('[consumos] nombres únicos SIN normalizar (' + rawNames.length + '):\n' + rawNames.join('\n'));
   }
-
-  const scRows = COL.udn
-    ? rows.filter(r => String(r[COL.udn]).trim() === 'Sous Chef')
-    : rows;
 
   let skipped = 0;
   const clientsByMonth  = {};
