@@ -66,6 +66,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .client-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .client-table th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text2); white-space: nowrap; }
 .client-table td { padding: 7px 10px; border-bottom: 1px solid rgba(46,50,64,0.4); color: var(--text); white-space: nowrap; }
+.client-table td.idx { color: var(--text2); font-size: 11px; width: 32px; }
+.client-table tr.sep td { padding: 10px 10px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); border-bottom: 1px solid var(--border); border-top: 2px solid var(--border); background: none; }
+.client-table tr.no-compra td { color: var(--text2); }
 .tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
 .tag-nuevo    { background: rgba(59,142,240,0.15);  color: #3b8ef0; }
 .tag-activo   { background: rgba(29,184,122,0.15);  color: #1db87a; }
@@ -528,6 +531,7 @@ function renderMovimientosChart() {
 }
 
 function renderClientTable(periodKeys) {
+  // Clients that bought in the period
   const clientData = {};
   periodKeys.forEach(mKey => {
     Object.entries(allData.clientMonthData[mKey] || {}).forEach(([name, data]) => {
@@ -542,7 +546,7 @@ function renderClientTable(periodKeys) {
   const sorted = Object.entries(clientData).sort((a, b) => b[1].netoUsd - a[1].netoUsd);
   const today  = new Date();
 
-  function getTag(name) {
+  function getBuyerTag(name) {
     if (periodKeys.length === 1) {
       return allData.clientFirstMonth[name] === periodKeys[0]
         ? '<span class="tag tag-nuevo">Nuevo</span>'
@@ -556,23 +560,54 @@ function renderClientTable(periodKeys) {
     return '<span class="tag tag-churn">Churn</span>';
   }
 
-  document.getElementById('title-clientes').textContent = `Clientes del período — ${sorted.length} CCC`;
+  // Clients that have bought before but NOT in this period
+  const nonBuyers = Object.keys(allData.clientFirstMonth)
+    .filter(name => !clientData[name])
+    .map(name => {
+      const last = allData.clientLastPurchase[name];
+      const days = last ? (today - last) / 86400000 : Infinity;
+      const tag  = days <= 90
+        ? '<span class="tag tag-inactivo">Inactivo</span>'
+        : '<span class="tag tag-churn">Churn</span>';
+      return { name, last, days, tag };
+    })
+    .sort((a, b) => a.days - b.days); // most recently inactive first
+
+  document.getElementById('title-clientes').textContent =
+    `Clientes del período — ${sorted.length} CCC + ${nonBuyers.length} sin compra`;
+
+  const buyerRows = sorted.map(([name, d], i) => `
+    <tr>
+      <td class="idx">${i + 1}</td>
+      <td>${name}</td>
+      <td>${getBuyerTag(name)}</td>
+      <td>U$S ${fmtN(Math.round(d.netoUsd))}</td>
+      <td>${fmtAR(d.montoNeto)}</td>
+      <td>${fmtDate(d.lastPurchase)}</td>
+    </tr>`).join('');
+
+  const sepRow = nonBuyers.length ? `
+    <tr class="sep">
+      <td colspan="6">Sin compra en el período (${nonBuyers.length})</td>
+    </tr>` : '';
+
+  const nonBuyerRows = nonBuyers.map(({ name, last, tag }, i) => `
+    <tr class="no-compra">
+      <td class="idx">${sorted.length + i + 1}</td>
+      <td>${name}</td>
+      <td>${tag}</td>
+      <td>—</td>
+      <td>—</td>
+      <td>${fmtDate(last)}</td>
+    </tr>`).join('');
 
   document.getElementById('tabla-clientes').innerHTML =
     `<thead><tr>
-      <th>Cliente</th><th></th>
+      <th>#</th><th>Cliente</th><th></th>
       <th>Fact. USD</th><th>Fact. ARS</th>
       <th>Último pago</th>
     </tr></thead>` +
-    `<tbody>${sorted.map(([name, d]) => `
-      <tr>
-        <td>${name}</td>
-        <td>${getTag(name)}</td>
-        <td>U$S ${fmtN(Math.round(d.netoUsd))}</td>
-        <td>${fmtAR(d.montoNeto)}</td>
-        <td>${fmtDate(d.lastPurchase)}</td>
-      </tr>`).join('')}
-    </tbody>`;
+    `<tbody>${buyerRows}${sepRow}${nonBuyerRows}</tbody>`;
 }
 
 // --- Dashboard setup ---
