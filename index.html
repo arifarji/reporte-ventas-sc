@@ -286,15 +286,22 @@ async function fetchShareFile(token, shareUrl) {
 
 // Client name normalization — unifies variants into canonical names
 const CLIENT_RULES = [
-  [/^CORPO CAF[EÉ]/i,        'CORPO CAFÉ'],
+  // Multi-location chains
+  [/^ADP\b/i,                'ADP'],
+  [/^ARAMARK/i,              'ARAMARK'],
+  [/^BONAFIDE/i,             'BONAFIDE'],
+  // Brand + suffix variants
   [/^CHEF POINT/i,           'CHEF POINT'],
+  [/^CORPO CAF[EÉ]/i,        'CORPO CAFÉ'],
+  [/^DISFRIOALAR/i,          'DISFRIOALAR'],
   [/^FEDERICO PITA/i,        'FEDERICO PITA'],
   [/^FRIKS/i,                'FRIKS'],
   [/^INSTITUTO UN LUGAR/i,   'INSTITUTO UN LUGAR'],
   [/^LA FACTORY/i,           'LA FACTORY'],
   [/^LA FERNETERIA/i,        'LA FERNETERIA'],
-  [/^OREJA NEGRA/i,          'OREJA NEGRA'],
+  [/^MELAO/i,                'MELAO'],
   [/^MUESTRA SC/i,           'MUESTRA SC'],
+  [/^OREJA NEGRA/i,          'OREJA NEGRA'],
 ];
 function normalizeClient(raw) {
   const s = String(raw).trim();
