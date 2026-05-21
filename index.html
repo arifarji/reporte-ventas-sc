@@ -41,53 +41,36 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
 .user-name { font-size: 13px; color: var(--text2); }
 
-.mep-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 9px 28px; display: flex; align-items: center; gap: 24px; overflow-x: auto; }
-.mep-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); white-space: nowrap; flex-shrink: 0; }
-.mep-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.mep-month { font-size: 12px; color: var(--text2); }
-.mep-val { font-size: 13px; font-weight: 600; }
-
 .dash-body { padding: 20px 28px; max-width: 1300px; margin: 0 auto; }
 
 .filter-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
-.filter-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); margin-right: 4px; }
-.year-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text2); padding: 5px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; }
-.year-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(29,184,122,0.08); }
-.week-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 5px; padding: 5px 10px; font-size: 12px; font-family: inherit; cursor: pointer; }
+.filter-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text2); margin-right: 4px; flex-shrink: 0; }
+.filter-btn { background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text2); padding: 5px 12px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.15s; white-space: nowrap; }
+.filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(29,184,122,0.08); }
 
-.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 12px; }
-.kpi-4   { grid-template-columns: repeat(4, 1fr); }
-@media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(3, 1fr); } .kpi-4 { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 700px)  { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 450px)  { .kpi-row { grid-template-columns: 1fr; } }
+.kpi-row { display: grid; gap: 12px; margin-bottom: 12px; }
+.kpi-4 { grid-template-columns: repeat(4, 1fr); }
+.kpi-2 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 1100px) { .kpi-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px)  { .kpi-4, .kpi-2 { grid-template-columns: 1fr; } }
 .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
 .kpi-card.highlight { border-color: var(--accent); }
 .kpi-label { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); margin-bottom: 8px; }
-.kpi-main { font-size: 24px; font-weight: 600; line-height: 1.1; }
+.kpi-main { font-size: 28px; font-weight: 600; line-height: 1.1; }
 .kpi-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
 
-.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
-.filter-select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 5px; padding: 5px 10px; font-size: 12px; font-family: inherit; cursor: pointer; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 12px; }
+.chart-card h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); margin-bottom: 14px; }
+.chart-wrap { position: relative; height: 220px; }
+
 .client-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .client-table th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text2); white-space: nowrap; }
 .client-table td { padding: 7px 10px; border-bottom: 1px solid rgba(46,50,64,0.4); color: var(--text); white-space: nowrap; }
-.client-table tbody tr { cursor: pointer; }
-.client-table tbody tr:hover { background: rgba(255,255,255,0.03); }
-.client-table tbody tr.active-row { background: rgba(29,184,122,0.08); }
 .tag { display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; }
 .tag-nuevo    { background: rgba(59,142,240,0.15);  color: #3b8ef0; }
 .tag-activo   { background: rgba(29,184,122,0.15);  color: #1db87a; }
 .tag-inactivo { background: rgba(255,180,0,0.15);   color: #ffb400; }
 .tag-churn    { background: rgba(224,82,82,0.15);   color: #e05252; }
-
-.charts-row { display: grid; gap: 12px; margin-bottom: 12px; }
-.charts-row.full { grid-template-columns: 1fr; }
-.charts-row.half { grid-template-columns: 1fr 1fr; }
-@media (max-width: 820px) { .charts-row.half { grid-template-columns: 1fr; } }
-.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
-.chart-card h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text2); margin-bottom: 14px; }
-.chart-wrap { position: relative; height: 220px; }
-.chart-wrap.tall { height: 300px; }
 </style>
 </head>
 <body>
@@ -119,10 +102,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
     <div class="header-right">
       <div class="toggle-group">
-        <button class="toggle-btn active" id="btn-mensual" onclick="setViewMode('mensual')">Mensual</button>
-        <button class="toggle-btn" id="btn-semanal" onclick="setViewMode('semanal')">Semanal</button>
-      </div>
-      <div class="toggle-group">
         <button class="toggle-btn active" id="btn-usd" onclick="setCurrency('usd')">U$S</button>
         <button class="toggle-btn" id="btn-ars" onclick="setCurrency('ars')">AR$</button>
       </div>
@@ -133,56 +112,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
   </header>
 
-  <div id="mep-bar" class="mep-bar"></div>
-
   <div class="dash-body">
     <div class="filter-bar">
       <span class="filter-label">Año</span>
       <div id="year-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-      <span class="filter-label" id="period-filter-label" style="margin-left:16px;">Mes</span>
-      <div id="month-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-      <div id="week-filter-wrap" style="display:none;">
-        <select id="week-select" class="week-select"></select>
+      <div id="month-filter-section" style="display:flex;align-items:center;gap:6px;margin-left:16px;flex-wrap:wrap;">
+        <span class="filter-label">Mes</span>
+        <div id="month-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
       </div>
     </div>
 
-    <div class="kpi-row" id="kpi-row-1"></div>
-    <div class="kpi-row kpi-4" id="kpi-row-2"></div>
+    <div class="kpi-row kpi-4" id="kpi-row-1"></div>
+    <div class="kpi-row kpi-2" id="kpi-row-2"></div>
 
-    <div class="charts-row full">
-      <div class="chart-card">
-        <h3 id="title-facturacion">Facturación mensual U$S — Sous Chef</h3>
-        <div class="chart-wrap"><canvas id="chart-facturacion"></canvas></div>
-      </div>
+    <div class="chart-card">
+      <h3 id="title-facturacion">Facturación mensual</h3>
+      <div class="chart-wrap"><canvas id="chart-facturacion"></canvas></div>
     </div>
 
-    <div class="charts-row half">
-      <div class="chart-card">
-        <h3>Penetración por categoría</h3>
-        <div class="chart-wrap tall"><canvas id="chart-penetracion"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h3>Top productos — Raciones (acumulado período)</h3>
-        <div class="chart-wrap tall"><canvas id="chart-productos"></canvas></div>
-      </div>
+    <div class="chart-card">
+      <h3>Movimiento de clientes — Nuevos vs Churn</h3>
+      <div class="chart-wrap"><canvas id="chart-movimientos"></canvas></div>
     </div>
 
-    <div class="charts-row full">
-      <div class="chart-card">
-        <div class="section-header">
-          <h3>Raciones semanales por cliente</h3>
-          <select id="cliente-select" class="filter-select"></select>
-        </div>
-        <div class="chart-wrap"><canvas id="chart-semanal"></canvas></div>
-      </div>
-    </div>
-
-    <div class="charts-row full">
-      <div class="chart-card">
-        <h3>Clientes — resumen del período activo</h3>
-        <div style="overflow-x:auto;margin-top:4px;">
-          <table class="client-table" id="tabla-clientes"></table>
-        </div>
+    <div class="chart-card">
+      <h3 id="title-clientes">Clientes del período</h3>
+      <div style="overflow-x:auto;margin-top:4px;">
+        <table class="client-table" id="tabla-clientes"></table>
       </div>
     </div>
   </div>
@@ -196,11 +152,9 @@ const DRIVE_ID = 'b!pmFBZLuJVkeuGzPtHmyMtMnI1MPI-WtNtZQeYhwzMrCBd7CMfYuTQKSXTAwl
 const ITEM_ID  = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
 const REDIRECT = 'https://reporte-ventas-sc.vercel.app/';
 
-let currency   = 'usd';
-let viewMode   = 'mensual';
-let activeYears = new Set();
-let activeMonth = null;
-let activeWeek  = null;
+let currency      = 'usd';
+let activeYear    = null;   // fiscal year number or null = all
+let activeMonthKey = null;  // 'YYYY-MM' or null = all months in year
 let allData = null;
 let charts  = {};
 
@@ -262,7 +216,7 @@ async function getUser(token) {
   return res.ok ? res.json() : null;
 }
 
-// --- Date / period helpers ---
+// --- Date helpers ---
 function periodKey(d) {
   if (d instanceof Date) return d.toISOString().slice(0, 7);
   return String(d).slice(0, 7);
@@ -277,59 +231,27 @@ function fiscalYear(key) {
   return m >= 11 ? y + 1 : y;
 }
 function fyLabel(fy) { return 'AF' + String(fy).slice(2); }
-function weekKey(d) {
-  if (!(d instanceof Date) || isNaN(d)) return null;
-  const dt  = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const day = dt.getUTCDay() || 7;
-  dt.setUTCDate(dt.getUTCDate() + 4 - day);
-  const y0  = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
-  const wk  = Math.ceil(((dt - y0) / 86400000 + 1) / 7);
-  return `${dt.getUTCFullYear()}-W${String(wk).padStart(2,'0')}`;
-}
-function weekLabel(k) {
-  if (!k) return '';
-  const [y, w] = k.split('-W');
-  return `S${parseInt(w)}/${y.slice(2)}`;
-}
-function weekStartDate(k) {
-  if (!k) return null;
-  const [y, w] = k.split('-W').map(Number);
-  const jan4   = new Date(Date.UTC(y, 0, 4));
-  return new Date(jan4.getTime() - (jan4.getUTCDay() - 1) * 86400000 + (w - 1) * 7 * 86400000);
-}
 function prevMonthKey(k) {
   const [y, m] = k.split('-').map(Number);
   const d = new Date(y, m - 2, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
 }
-function prevWeekKey(k) {
-  const start = weekStartDate(k);
-  if (!start) return null;
-  return weekKey(new Date(start.getTime() - 7 * 86400000));
-}
 function fmtDate(d) {
   if (!d || isNaN(d)) return '—';
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }
-function fyMonthSet(fy) {
-  const keys = new Set();
-  for (let m = 11; m <= 12; m++) keys.add(`${fy-1}-${String(m).padStart(2,'0')}`);
-  for (let m = 1;  m <= 10; m++) keys.add(`${fy}-${String(m).padStart(2,'0')}`);
-  return keys;
+function fmtN(v, dec = 0) { return Number(v).toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+function fmtAR(v) {
+  const a = Math.abs(v);
+  if (a >= 1e9) return 'AR$ ' + (v/1e9).toFixed(1) + 'B';
+  if (a >= 1e6) return 'AR$ ' + (v/1e6).toFixed(1) + 'M';
+  return 'AR$ ' + fmtN(v);
 }
-
-// --- Data aggregation ---
-function aggregateRows(rows) {
-  const map = new Map();
-  rows.forEach(r => {
-    const key = periodKey(r['Periodo fiscal']);
-    if (!map.has(key)) map.set(key, { raciones: 0, montoNeto: 0, netoUsd: 0 });
-    const p = map.get(key);
-    p.raciones  += Number(r['Raciones'])   || 0;
-    p.montoNeto += Number(r['Monto Neto']) || 0;
-    p.netoUsd   += Number(r['Neto u$s'])   || 0;
-  });
-  return map;
+function fmtUSD(v) {
+  const a = Math.abs(v);
+  if (a >= 1e6) return 'U$S ' + (v/1e6).toFixed(2) + 'M';
+  if (a >= 1e3) return 'U$S ' + fmtN(v/1e3, 1) + 'k';
+  return 'U$S ' + fmtN(v);
 }
 
 function parseMEP(ws) {
@@ -370,430 +292,136 @@ async function loadFile(token) {
     const buf = await res.arrayBuffer();
     const wb  = XLSX.read(buf, { type: 'array', cellDates: true });
     const rows = XLSX.utils.sheet_to_json(wb.Sheets['Base'], { defval: '' });
-
     const scRows = rows.filter(r => String(r['UDN']).trim() === 'Sous Chef');
-    const scMonthly = aggregateRows(scRows);
-    const mepData   = wb.Sheets['Indices'] ? parseMEP(wb.Sheets['Indices']) : new Map();
 
-    // Top productos per fiscal year
-    const prodByYear = {};
-    scRows.forEach(r => {
-      const year = fiscalYear(periodKey(r['Periodo fiscal']));
-      const prod = String(r['Tipo final']).trim() || 'Otros';
-      if (!prodByYear[year]) prodByYear[year] = new Map();
-      const m = prodByYear[year];
-      if (!m.has(prod)) m.set(prod, { raciones: 0, netoUsd: 0 });
-      m.get(prod).raciones += Number(r['Raciones'])  || 0;
-      m.get(prod).netoUsd  += Number(r['Neto u$s'])  || 0;
-    });
+    const scMonthly          = new Map(); // monthKey -> {montoNeto, netoUsd}
+    const clientsByMonth     = {};        // monthKey -> Set<clientName>
+    const clientFirstMonth   = {};        // clientName -> earliest monthKey
+    const clientMonthData    = {};        // monthKey -> { clientName -> {netoUsd, montoNeto, lastPurchase} }
+    const clientLastPurchase = {};        // clientName -> Date (most recent purchase ever)
 
-    // Per-client raw rows for the weekly per-client chart
-    const clientRaw = {};
     scRows.forEach(r => {
-      const client  = String(r['Fantasia']).trim() || String(r['Cliente']).trim() || 'Sin nombre';
+      const mKey   = periodKey(r['Periodo fiscal']);
+      const client = String(r['Fantasia']).trim() || String(r['Cliente']).trim() || 'Sin nombre';
+      const usd    = Number(r['Neto u$s'])   || 0;
+      const ars    = Number(r['Monto Neto']) || 0;
       const emision = r['Emision'] instanceof Date ? r['Emision'] : new Date(r['Emision']);
-      const wk      = weekKey(emision);
-      const fy      = fiscalYear(periodKey(r['Periodo fiscal']));
-      if (!clientRaw[client]) clientRaw[client] = [];
-      clientRaw[client].push({ wk, fy, emision, raciones: Number(r['Raciones'])||0, netoUsd: Number(r['Neto u$s'])||0 });
-    });
+      const emOk   = !isNaN(emision);
 
-    // Analytics structures
-    const clientsByMonth   = {};
-    const clientFirstMonth = {};
-    const clientsByWeek    = {};
-    const clientFirstWeek  = {};
-    const aramarkByMonth   = new Map();
-    const aramarkByWeek    = new Map();
-    const prodByClientMonth = {};
-    const prodByClientWeek  = {};
-    const scWeekly = new Map();
+      // Monthly totals
+      if (!scMonthly.has(mKey)) scMonthly.set(mKey, { montoNeto: 0, netoUsd: 0 });
+      const sm = scMonthly.get(mKey);
+      sm.montoNeto += ars;
+      sm.netoUsd   += usd;
 
-    scRows.forEach(r => {
-      const client    = String(r['Fantasia']).trim() || String(r['Cliente']).trim() || 'Sin nombre';
-      const mKey      = periodKey(r['Periodo fiscal']);
-      const emision   = r['Emision'] instanceof Date ? r['Emision'] : new Date(r['Emision']);
-      const wKey      = weekKey(emision);
-      const tipo      = String(r['Tipo final']).trim() || 'Otros';
-      const raciones  = Number(r['Raciones'])   || 0;
-      const netoUsd   = Number(r['Neto u$s'])   || 0;
-      const montoNeto = Number(r['Monto Neto']) || 0;
-
-      // Monthly
+      // Client sets per month
       if (!clientsByMonth[mKey]) clientsByMonth[mKey] = new Set();
       clientsByMonth[mKey].add(client);
+
+      // First purchase per client
       if (!clientFirstMonth[client] || mKey < clientFirstMonth[client]) clientFirstMonth[client] = mKey;
 
-      if (!prodByClientMonth[mKey]) prodByClientMonth[mKey] = {};
-      if (!prodByClientMonth[mKey][client]) prodByClientMonth[mKey][client] = new Set();
-      prodByClientMonth[mKey][client].add(tipo);
+      // Per-client billing per month
+      if (!clientMonthData[mKey]) clientMonthData[mKey] = {};
+      if (!clientMonthData[mKey][client]) clientMonthData[mKey][client] = { netoUsd: 0, montoNeto: 0, lastPurchase: null };
+      const cd = clientMonthData[mKey][client];
+      cd.netoUsd   += usd;
+      cd.montoNeto += ars;
+      if (emOk && (!cd.lastPurchase || emision > cd.lastPurchase)) cd.lastPurchase = emision;
 
-      if (client === 'Aramark') {
-        if (!aramarkByMonth.has(mKey)) aramarkByMonth.set(mKey, { raciones: 0, netoUsd: 0 });
-        const a = aramarkByMonth.get(mKey);
-        a.raciones += raciones; a.netoUsd += netoUsd;
-      }
-
-      // Weekly
-      if (wKey) {
-        if (!scWeekly.has(wKey)) scWeekly.set(wKey, { raciones: 0, montoNeto: 0, netoUsd: 0 });
-        const sw = scWeekly.get(wKey);
-        sw.raciones += raciones; sw.montoNeto += montoNeto; sw.netoUsd += netoUsd;
-
-        if (!clientsByWeek[wKey]) clientsByWeek[wKey] = new Set();
-        clientsByWeek[wKey].add(client);
-        if (!clientFirstWeek[client] || wKey < clientFirstWeek[client]) clientFirstWeek[client] = wKey;
-
-        if (!prodByClientWeek[wKey]) prodByClientWeek[wKey] = {};
-        if (!prodByClientWeek[wKey][client]) prodByClientWeek[wKey][client] = new Set();
-        prodByClientWeek[wKey][client].add(tipo);
-
-        if (client === 'Aramark') {
-          if (!aramarkByWeek.has(wKey)) aramarkByWeek.set(wKey, { raciones: 0, netoUsd: 0 });
-          const aw = aramarkByWeek.get(wKey);
-          aw.raciones += raciones; aw.netoUsd += netoUsd;
-        }
+      // Overall last purchase per client
+      if (emOk && (!clientLastPurchase[client] || emision > clientLastPurchase[client])) {
+        clientLastPurchase[client] = emision;
       }
     });
 
-    const allWeeks    = [...scWeekly.keys()].sort();
-    const fiscalYears = [...new Set([...scMonthly.keys()].map(k => fiscalYear(k)))].sort((a,b) => b - a);
-    activeYears = new Set([fiscalYears[0]]);
+    const mepData    = wb.Sheets['Indices'] ? parseMEP(wb.Sheets['Indices']) : new Map();
+    const allMonths  = [...scMonthly.keys()].sort();
+    const fiscalYears = [...new Set(allMonths.map(k => fiscalYear(k)))].sort((a, b) => b - a);
 
-    allData = {
-      scMonthly, mepData, prodByYear, clientRaw, fiscalYears,
-      clientsByMonth, clientFirstMonth,
-      clientsByWeek,  clientFirstWeek,
-      aramarkByMonth, aramarkByWeek,
-      prodByClientMonth, prodByClientWeek,
-      scWeekly, allWeeks,
-    };
+    // Default to last complete month
+    const nowKey     = new Date().toISOString().slice(0, 7);
+    const completed  = allMonths.filter(k => k < nowKey);
+    const defaultKey = completed.length ? completed[completed.length - 1] : allMonths[allMonths.length - 1];
 
+    activeYear     = fiscalYear(defaultKey);
+    activeMonthKey = defaultKey;
+
+    allData = { scMonthly, mepData, clientsByMonth, clientFirstMonth, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
     buildDashboard();
   } catch(e) {
     setError('No se pudo cargar el archivo. ' + e.message);
   }
 }
 
-// --- Formatting ---
-function fmtN(v, dec = 0) { return Number(v).toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
-function fmtAR(v) {
-  const a = Math.abs(v);
-  if (a >= 1e9) return 'AR$ ' + (v/1e9).toFixed(1) + 'B';
-  if (a >= 1e6) return 'AR$ ' + (v/1e6).toFixed(1) + 'M';
-  return 'AR$ ' + fmtN(v);
+// --- Filter state helpers ---
+function getActivePeriodKeys() {
+  return allData.allMonths.filter(k => {
+    if (activeYear !== null && fiscalYear(k) !== activeYear) return false;
+    if (activeMonthKey !== null && k !== activeMonthKey) return false;
+    return true;
+  });
 }
-function fmtUSD(v) {
-  const a = Math.abs(v);
-  if (a >= 1e6) return 'U$S ' + (v/1e6).toFixed(2) + 'M';
-  if (a >= 1e3) return 'U$S ' + fmtN(v/1e3, 1) + 'k';
-  return 'U$S ' + fmtN(v);
+
+function getChartMonths() {
+  // All months for the active year (or all) — used for the full-width charts
+  return allData.allMonths.filter(k => activeYear === null || fiscalYear(k) === activeYear).sort();
 }
 
 // --- KPI calculation ---
-function calcKPIs(periodKeys, mode) {
-  const clientsById   = mode === 'monthly' ? allData.clientsByMonth    : allData.clientsByWeek;
-  const prodByClient  = mode === 'monthly' ? allData.prodByClientMonth : allData.prodByClientWeek;
-  const aramarkData   = mode === 'monthly' ? allData.aramarkByMonth    : allData.aramarkByWeek;
-  const firstPurchase = mode === 'monthly' ? allData.clientFirstMonth  : allData.clientFirstWeek;
-  const dataMap       = mode === 'monthly' ? allData.scMonthly         : allData.scWeekly;
+function calcKPIs(periodKeys) {
+  const clients = new Set();
+  periodKeys.forEach(k => { (allData.clientsByMonth[k] || new Set()).forEach(c => clients.add(c)); });
+  const ccc = clients.size;
 
-  const currentClients = new Set();
-  periodKeys.forEach(k => { if (clientsById[k]) clientsById[k].forEach(c => currentClients.add(c)); });
-  const ccc = currentClients.size;
-
-  let totalRaciones = 0, totalUsd = 0, totalArs = 0;
+  let totalUsd = 0, totalArs = 0;
   periodKeys.forEach(k => {
-    const d = dataMap.get(k) || {};
-    totalRaciones += d.raciones  || 0;
-    totalUsd      += d.netoUsd   || 0;
-    totalArs      += d.montoNeto || 0;
+    const d = allData.scMonthly.get(k) || {};
+    totalUsd += d.netoUsd   || 0;
+    totalArs += d.montoNeto || 0;
   });
 
-  let aramarkRaciones = 0;
-  periodKeys.forEach(k => { const a = aramarkData.get(k); if (a) aramarkRaciones += a.raciones; });
-  const aramarkPresent = currentClients.has('Aramark');
-  const cccSinAramark  = aramarkPresent ? ccc - 1 : ccc;
+  const clientesNuevos = [...clients].filter(c => periodKeys.includes(allData.clientFirstMonth[c])).length;
 
-  const racPerClientCon = ccc > 0 ? totalRaciones / ccc : 0;
-  const racPerClientSin = cccSinAramark > 0 ? (totalRaciones - aramarkRaciones) / cccSinAramark : 0;
-
-  // Productos promedio por cliente (distinct tipos across selected period)
-  const clientTipos = {};
-  periodKeys.forEach(k => {
-    const pbc = prodByClient[k];
-    if (!pbc) return;
-    Object.entries(pbc).forEach(([client, tipos]) => {
-      if (!clientTipos[client]) clientTipos[client] = new Set();
-      tipos.forEach(t => clientTipos[client].add(t));
-    });
-  });
-  const tipoVals    = Object.values(clientTipos).map(s => s.size);
-  const prodPromedio = tipoVals.length > 0 ? tipoVals.reduce((a, b) => a + b, 0) / tipoVals.length : 0;
-
-  // Clientes nuevos: first ever purchase falls within selected period
-  const clientesNuevos = [...currentClients].filter(c => periodKeys.includes(firstPurchase[c])).length;
-
-  // Retención: only when exactly 1 period key selected
-  let retencion = null;
+  let retencion = null, churnPct = null;
   if (periodKeys.length === 1) {
-    const prevKey = mode === 'monthly' ? prevMonthKey(periodKeys[0]) : prevWeekKey(periodKeys[0]);
-    if (prevKey && clientsById[prevKey] && clientsById[prevKey].size > 0) {
-      const prevClients = clientsById[prevKey];
-      const retained    = [...prevClients].filter(c => currentClients.has(c)).length;
-      retencion = (retained / prevClients.size) * 100;
+    const prevKey    = prevMonthKey(periodKeys[0]);
+    const prevSet    = allData.clientsByMonth[prevKey] || new Set();
+    if (prevSet.size > 0) {
+      const retained = [...prevSet].filter(c => clients.has(c)).length;
+      retencion = retained / prevSet.size * 100;
+      churnPct  = 100 - retencion;
     }
   }
 
-  // TC MEP for the period
-  let tcMep = null;
-  if (periodKeys.length === 1) {
-    const mKey = mode === 'monthly' ? periodKeys[0] : periodKey(weekStartDate(periodKeys[0]) || new Date());
-    tcMep = allData.mepData.get(mKey) || null;
-  }
-  if (tcMep === null) {
-    const sorted = [...allData.mepData.keys()].sort();
-    if (sorted.length) tcMep = allData.mepData.get(sorted[sorted.length - 1]);
+  // TC MEP: use the selected month if single, otherwise latest available
+  let tcMep = periodKeys.length === 1 ? (allData.mepData.get(periodKeys[0]) || null) : null;
+  if (!tcMep) {
+    const mepKeys = [...allData.mepData.keys()].sort();
+    if (mepKeys.length) tcMep = allData.mepData.get(mepKeys[mepKeys.length - 1]);
   }
 
-  // Penetración por categoría
-  const tipoClientMap = {};
-  periodKeys.forEach(k => {
-    const pbc = prodByClient[k];
-    if (!pbc) return;
-    Object.entries(pbc).forEach(([client, tipos]) => {
-      tipos.forEach(tipo => {
-        if (!tipoClientMap[tipo]) tipoClientMap[tipo] = new Set();
-        tipoClientMap[tipo].add(client);
-      });
-    });
-  });
-  const penetracion = Object.entries(tipoClientMap)
-    .map(([tipo, clients]) => ({ tipo, count: clients.size, pct: ccc > 0 ? clients.size / ccc * 100 : 0 }))
-    .sort((a, b) => b.pct - a.pct);
-
-  return { ccc, totalRaciones, totalUsd, totalArs, racPerClientCon, racPerClientSin, prodPromedio, clientesNuevos, retencion, tcMep, penetracion };
+  return { ccc, totalUsd, totalArs, clientesNuevos, retencion, churnPct, tcMep };
 }
 
-// --- Dashboard build ---
-function setViewMode(mode) {
-  viewMode = mode;
-  document.getElementById('btn-mensual').classList.toggle('active', mode === 'mensual');
-  document.getElementById('btn-semanal').classList.toggle('active', mode === 'semanal');
-  document.getElementById('period-filter-label').textContent = mode === 'mensual' ? 'Mes' : 'Semana';
-  document.getElementById('month-filters').style.display      = mode === 'mensual' ? 'flex' : 'none';
-  document.getElementById('week-filter-wrap').style.display   = mode === 'semanal' ? 'block' : 'none';
-  if (mode === 'mensual') { activeWeek = null;  renderMonthFilters(); }
-  else                    { activeMonth = null; renderWeekFilter();   }
-  renderAll();
-}
-
-function setCurrency(cur) {
-  currency = cur;
-  document.getElementById('btn-usd').classList.toggle('active', cur === 'usd');
-  document.getElementById('btn-ars').classList.toggle('active', cur === 'ars');
-  if (allData) renderAll();
-}
-
-function buildDashboard() {
-  const yf = document.getElementById('year-filters');
-  yf.innerHTML = '';
-  const mostRecent = allData.fiscalYears[0];
-  const addBtn = (label, fy) => {
-    const btn = document.createElement('button');
-    btn.className = 'year-btn' + (fy === mostRecent ? ' active' : '');
-    btn.textContent = label;
-    btn.onclick = () => {
-      document.querySelectorAll('#year-filters .year-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeYears = fy === null ? new Set(allData.fiscalYears) : new Set([fy]);
-      if (viewMode === 'mensual') renderMonthFilters(); else renderWeekFilter();
-      renderAll();
-    };
-    yf.appendChild(btn);
-  };
-  allData.fiscalYears.forEach(fy => addBtn(fyLabel(fy), fy));
-  addBtn('Todos', null);
-
-  renderMEP();
-  renderMonthFilters();
-  renderAll();
-  showScreen('report-screen');
-}
-
-function renderMEP() {
-  const keys = [...allData.mepData.keys()].sort().slice(-6).reverse();
-  document.getElementById('mep-bar').innerHTML =
-    `<span class="mep-label">TC MEP</span>` +
-    keys.map(k => `<span class="mep-item"><span class="mep-month">${periodLabel(k)}</span><span class="mep-val">$${fmtN(allData.mepData.get(k))}</span></span>`).join('');
-}
-
-function renderMonthFilters() {
-  activeMonth = null;
-  const mf = document.getElementById('month-filters');
-  const monthNames = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const available  = [...new Set(
-    [...allData.scMonthly.keys()]
-      .filter(k => activeYears.has(fiscalYear(k)))
-      .map(k => k.slice(5))
-  )].sort();
-
-  mf.innerHTML = '';
-  if (available.length <= 1) return;
-
-  const todosBtn = document.createElement('button');
-  todosBtn.className = 'year-btn active';
-  todosBtn.textContent = 'Todos';
-  todosBtn.onclick = () => {
-    document.querySelectorAll('#month-filters .year-btn').forEach(b => b.classList.remove('active'));
-    todosBtn.classList.add('active');
-    activeMonth = null;
-    renderAll();
-  };
-  mf.appendChild(todosBtn);
-
-  available.forEach(m => {
-    const btn = document.createElement('button');
-    btn.className = 'year-btn';
-    btn.textContent = monthNames[parseInt(m) - 1];
-    btn.onclick = () => {
-      document.querySelectorAll('#month-filters .year-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeMonth = m;
-      renderAll();
-    };
-    mf.appendChild(btn);
-  });
-}
-
-function renderWeekFilter() {
-  activeWeek = null;
-  const sel = document.getElementById('week-select');
-
-  const fyMonths = new Set();
-  [...activeYears].forEach(fy => fyMonthSet(fy).forEach(m => fyMonths.add(m)));
-
-  const available = allData.allWeeks.filter(wk => {
-    const start = weekStartDate(wk);
-    return start && fyMonths.has(periodKey(start));
-  });
-
-  sel.innerHTML = `<option value="">Todas las semanas</option>` +
-    available.slice().reverse().map(wk => `<option value="${wk}">${weekLabel(wk)}</option>`).join('');
-
-  if (available.length) {
-    activeWeek = available[available.length - 1];
-    sel.value  = activeWeek;
-  }
-
-  sel.onchange = () => { activeWeek = sel.value || null; renderAll(); };
-}
-
+// --- Render ---
 function renderAll() {
-  if (viewMode === 'mensual') renderMensual(); else renderSemanal();
+  const periodKeys = getActivePeriodKeys();
+  if (!periodKeys.length) return;
+
+  const kpis = calcKPIs(periodKeys);
+  const lbl  = activeMonthKey
+    ? periodLabel(activeMonthKey).toUpperCase()
+    : activeYear ? `${fyLabel(activeYear)} (acum.)` : 'Acumulado';
+
+  renderKPICards(kpis, lbl);
+  renderFacturacionChart(periodKeys);
+  renderMovimientosChart();
+  renderClientTable(periodKeys);
 }
 
-function renderMensual() {
-  const months = [...allData.scMonthly.keys()]
-    .filter(k => activeYears.has(fiscalYear(k)) && (!activeMonth || k.slice(5) === activeMonth))
-    .sort();
-  if (!months.length) return;
-
-  const labels = months.map(periodLabel);
-  const scData = months.map(k => allData.scMonthly.get(k) || { raciones:0, montoNeto:0, netoUsd:0 });
-
-  document.getElementById('title-facturacion').textContent =
-    `Facturación mensual ${currency==='usd'?'U$S':'AR$'} y Raciones — Sous Chef`;
-  renderTrendChart(labels,
-    scData.map(d => Math.round(currency==='usd' ? d.netoUsd : d.montoNeto)),
-    scData.map(d => Math.round(d.raciones))
-  );
-
-  const kpis = calcKPIs(months, 'monthly');
-  const lbl  = activeMonth
-    ? periodLabel(months[0]).toUpperCase()
-    : [...activeYears].map(fyLabel).join('+') + ' (acum.)';
-  renderKPIRows(kpis, lbl);
-  renderProductosChart();
-  renderPenetracionChart(kpis.penetracion);
-  renderClients(months, 'monthly');
-}
-
-function renderSemanal() {
-  const fyMonths = new Set();
-  [...activeYears].forEach(fy => fyMonthSet(fy).forEach(m => fyMonths.add(m)));
-
-  const allActiveWeeks = allData.allWeeks.filter(wk => {
-    const start = weekStartDate(wk);
-    return start && fyMonths.has(periodKey(start));
-  });
-  if (!allActiveWeeks.length) return;
-
-  const labels = allActiveWeeks.map(weekLabel);
-  const scData = allActiveWeeks.map(k => allData.scWeekly.get(k) || { raciones:0, montoNeto:0, netoUsd:0 });
-
-  document.getElementById('title-facturacion').textContent =
-    `Facturación semanal ${currency==='usd'?'U$S':'AR$'} y Raciones — Sous Chef`;
-  renderTrendChart(labels,
-    scData.map(d => Math.round(currency==='usd' ? d.netoUsd : d.montoNeto)),
-    scData.map(d => Math.round(d.raciones))
-  );
-
-  const kpiKeys = activeWeek ? [activeWeek] : allActiveWeeks;
-  const kpis    = calcKPIs(kpiKeys, 'weekly');
-  const lbl     = activeWeek
-    ? weekLabel(activeWeek).toUpperCase()
-    : [...activeYears].map(fyLabel).join('+') + ' (acum.)';
-  renderKPIRows(kpis, lbl);
-  renderProductosChart();
-  renderPenetracionChart(kpis.penetracion);
-  renderClients(kpiKeys, 'weekly');
-}
-
-function renderTrendChart(labels, factVals, racionVals) {
-  destroyChart('fact');
-  charts.fact = new Chart(document.getElementById('chart-facturacion'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: currency==='usd'?'U$S':'AR$', data: factVals, backgroundColor: 'rgba(29,184,122,0.75)', borderColor: '#1db87a', borderWidth: 1, borderRadius: 3, yAxisID: 'y' },
-        { label: 'Raciones', data: racionVals, type: 'line', borderColor: '#3b8ef0', backgroundColor: 'rgba(59,142,240,0.15)', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#3b8ef0', tension: 0.3, yAxisID: 'y2' },
-      ],
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: true, labels: { color: '#8b90a0', font: { size: 11 }, boxWidth: 12 } } },
-      scales: {
-        x:  { ticks: { color: '#8b90a0', font: { size: 11 }, autoSkip: true, maxRotation: 45 }, grid: { display: false } },
-        y:  { ticks: { color: '#8b90a0', font: { size: 11 }, callback: v => currency==='usd' ? fmtUSD(v) : fmtAR(v) }, grid: { color: '#2e3240' }, position: 'left' },
-        y2: { ticks: { color: '#3b8ef0', font: { size: 11 }, callback: v => fmtN(v) }, grid: { display: false }, position: 'right' },
-      },
-    },
-  });
-}
-
-function renderKPIRows(kpis, lbl) {
-  const { ccc, totalUsd, totalArs, tcMep, clientesNuevos, retencion, racPerClientCon, racPerClientSin, prodPromedio } = kpis;
-
-  const row1 = [
-    { label: `CCC — ${lbl}`, main: fmtN(ccc), sub: clientesNuevos > 0 ? `${clientesNuevos} nuevo${clientesNuevos !== 1 ? 's' : ''}` : '', highlight: true },
-    { label: 'Facturación USD', main: `U$S ${fmtN(Math.round(totalUsd))}`, sub: '' },
-    { label: 'Facturación ARS', main: fmtAR(totalArs), sub: '' },
-    { label: 'Tipo de cambio MEP', main: tcMep ? `$${fmtN(tcMep)}` : '—', sub: '' },
-    { label: `Clientes nuevos — ${lbl}`, main: fmtN(clientesNuevos), sub: ccc > 0 ? `${((clientesNuevos / ccc) * 100).toFixed(1)}% del total` : '' },
-  ];
-
-  const row2 = [
-    {
-      label: '% Retención',
-      main:  retencion !== null ? `${retencion.toFixed(1)}%` : '—',
-      sub:   retencion !== null ? `${(100 - retencion).toFixed(1)}% churn` : 'Seleccioná un período',
-    },
-    { label: 'Rac. prom/cliente (c/ Aramark)', main: fmtN(racPerClientCon, 1), sub: 'raciones' },
-    { label: 'Rac. prom/cliente (s/ Aramark)', main: fmtN(racPerClientSin, 1), sub: 'raciones' },
-    { label: 'Productos prom/cliente',          main: fmtN(prodPromedio, 1),    sub: 'tipos distintos' },
-  ];
+function renderKPICards(kpis, lbl) {
+  const { ccc, totalUsd, totalArs, clientesNuevos, retencion, churnPct, tcMep } = kpis;
 
   const card = c => `
     <div class="kpi-card${c.highlight ? ' highlight' : ''}">
@@ -802,186 +430,238 @@ function renderKPIRows(kpis, lbl) {
       ${c.sub ? `<div class="kpi-sub">${c.sub}</div>` : ''}
     </div>`;
 
-  document.getElementById('kpi-row-1').innerHTML = row1.map(card).join('');
-  document.getElementById('kpi-row-2').innerHTML = row2.map(card).join('');
-}
+  document.getElementById('kpi-row-1').innerHTML = [
+    { label: `CCC — ${lbl}`, main: fmtN(ccc), sub: '', highlight: true },
+    { label: 'Facturación USD', main: `U$S ${fmtN(Math.round(totalUsd))}`, sub: '' },
+    { label: 'Facturación ARS', main: fmtAR(totalArs), sub: '' },
+    { label: 'TC MEP', main: tcMep ? `$${fmtN(tcMep)}` : '—', sub: '' },
+  ].map(card).join('');
 
-function renderProductosChart() {
-  const prodMap = new Map();
-  [...activeYears].forEach(y => {
-    const m = allData.prodByYear[y];
-    if (!m) return;
-    m.forEach((v, k) => {
-      if (!prodMap.has(k)) prodMap.set(k, { raciones: 0, netoUsd: 0 });
-      prodMap.get(k).raciones += v.raciones;
-      prodMap.get(k).netoUsd  += v.netoUsd;
-    });
-  });
-  const prods = [...prodMap.entries()]
-    .map(([name, v]) => ({ name, ...v }))
-    .filter(p => p.raciones > 0)
-    .sort((a, b) => b.raciones - a.raciones)
-    .slice(0, 12);
-
-  destroyChart('prod');
-  charts.prod = new Chart(document.getElementById('chart-productos'), {
-    type: 'bar',
-    data: { labels: prods.map(p => p.name), datasets: [{ data: prods.map(p => Math.round(p.raciones)), backgroundColor: 'rgba(59,142,240,0.7)', borderRadius: 3 }] },
-    options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#8b90a0', font: { size: 10 }, callback: v => fmtN(v) }, grid: { color: '#2e3240' } },
-        y: { ticks: { color: '#e8eaf0', font: { size: 11 } }, grid: { display: false } },
-      },
+  document.getElementById('kpi-row-2').innerHTML = [
+    {
+      label: `Clientes nuevos — ${lbl}`,
+      main: fmtN(clientesNuevos),
+      sub: ccc > 0 ? `${(clientesNuevos / ccc * 100).toFixed(1)}% del total` : '',
     },
-  });
+    {
+      label: '% Retención',
+      main: retencion !== null ? `${retencion.toFixed(1)}%` : '—',
+      sub: retencion !== null ? `${churnPct.toFixed(1)}% churn` : 'Seleccioná un mes para ver retención',
+    },
+  ].map(card).join('');
 }
 
-function renderPenetracionChart(penetracion) {
-  const items = penetracion.slice(0, 12);
-  destroyChart('penet');
-  charts.penet = new Chart(document.getElementById('chart-penetracion'), {
+function renderFacturacionChart(periodKeys) {
+  document.getElementById('title-facturacion').textContent =
+    `Facturación mensual ${currency === 'usd' ? 'U$S' : 'AR$'} + evolución CCC`;
+
+  const months   = getChartMonths();
+  const labels   = months.map(periodLabel);
+  const factVals = months.map(k => {
+    const d = allData.scMonthly.get(k) || {};
+    return Math.round(currency === 'usd' ? (d.netoUsd || 0) : (d.montoNeto || 0));
+  });
+  const cccVals  = months.map(k => (allData.clientsByMonth[k] || new Set()).size);
+  const bgColors = months.map(k =>
+    periodKeys.includes(k) ? 'rgba(29,184,122,0.85)' : 'rgba(29,184,122,0.3)'
+  );
+
+  destroyChart('fact');
+  charts.fact = new Chart(document.getElementById('chart-facturacion'), {
     type: 'bar',
     data: {
-      labels: items.map(p => p.tipo),
-      datasets: [{ data: items.map(p => parseFloat(p.pct.toFixed(1))), backgroundColor: 'rgba(29,184,122,0.7)', borderRadius: 3 }],
+      labels,
+      datasets: [
+        { label: currency === 'usd' ? 'U$S' : 'AR$', data: factVals, backgroundColor: bgColors, borderRadius: 3, yAxisID: 'y' },
+        { label: 'CCC', data: cccVals, type: 'line', borderColor: '#3b8ef0', backgroundColor: 'rgba(59,142,240,0.1)', borderWidth: 2, pointRadius: 4, pointBackgroundColor: '#3b8ef0', tension: 0.3, yAxisID: 'y2' },
+      ],
     },
     options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => `${ctx.raw}% de clientes (${items[ctx.dataIndex]?.count || 0})` } },
-      },
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: '#8b90a0', font: { size: 11 }, boxWidth: 12 } } },
       scales: {
-        x: { min: 0, max: 100, ticks: { color: '#8b90a0', font: { size: 10 }, callback: v => v + '%' }, grid: { color: '#2e3240' } },
-        y: { ticks: { color: '#e8eaf0', font: { size: 11 } }, grid: { display: false } },
+        x:  { ticks: { color: '#8b90a0', font: { size: 11 }, autoSkip: true, maxRotation: 45 }, grid: { display: false } },
+        y:  { ticks: { color: '#8b90a0', font: { size: 11 }, callback: v => currency === 'usd' ? fmtUSD(v) : fmtAR(v) }, grid: { color: '#2e3240' }, position: 'left' },
+        y2: { ticks: { color: '#3b8ef0', font: { size: 11 } }, grid: { display: false }, position: 'right' },
       },
     },
   });
 }
 
-function renderClients(periodKeys, mode) {
-  const clientTotals = {};
-  const fyMonths = new Set();
-  [...activeYears].forEach(fy => fyMonthSet(fy).forEach(m => fyMonths.add(m)));
+function renderMovimientosChart() {
+  const months = getChartMonths();
 
-  Object.entries(allData.clientRaw).forEach(([name, rows]) => {
-    let filtered;
-    if (mode === 'monthly') {
-      filtered = rows.filter(r => {
-        if (!activeYears.has(r.fy)) return false;
-        if (activeMonth) {
-          if (!(r.emision instanceof Date) || isNaN(r.emision)) return false;
-          return String(r.emision.getMonth() + 1).padStart(2,'0') === activeMonth;
-        }
-        return true;
-      });
-    } else {
-      filtered = rows.filter(r => {
-        if (!activeYears.has(r.fy)) return false;
-        if (activeWeek) return r.wk === activeWeek;
-        const start = r.emision instanceof Date ? r.emision : null;
-        return start && fyMonths.has(periodKey(start));
-      });
-    }
-    if (!filtered.length) return;
-    clientTotals[name] = {
-      raciones: filtered.reduce((a, r) => a + r.raciones, 0),
-      netoUsd:  filtered.reduce((a, r) => a + r.netoUsd,  0),
-      rows: filtered,
-    };
+  const nuevosVals = months.map(k => {
+    const cs = allData.clientsByMonth[k] || new Set();
+    return [...cs].filter(c => allData.clientFirstMonth[c] === k).length;
   });
 
-  const sorted = Object.entries(clientTotals).sort((a, b) => b[1].raciones - a[1].raciones);
-
-  const sel  = document.getElementById('cliente-select');
-  const prev = sel.value;
-  sel.innerHTML = sorted.map(([name]) => `<option value="${name}">${name}</option>`).join('');
-  if (prev && clientTotals[prev]) sel.value = prev;
-  sel.onchange = () => renderWeeklyChart(sel.value, clientTotals);
-  renderWeeklyChart(sel.value || sorted[0]?.[0], clientTotals);
-
-  const today = new Date();
-  function clientTag(rows) {
-    const dates = rows.map(r => r.emision).filter(d => d instanceof Date && !isNaN(d));
-    if (!dates.length) return '';
-    const first = new Date(Math.min(...dates)), last = new Date(Math.max(...dates));
-    const sinceFirst = (today - first) / 86400000, sinceLast = (today - last) / 86400000;
-    if (sinceFirst <= 30) return '<span class="tag tag-nuevo">Nuevo</span>';
-    if (sinceLast  <= 30) return '<span class="tag tag-activo">Activo</span>';
-    if (sinceLast  <= 90) return '<span class="tag tag-inactivo">Inactivo</span>';
-    return '<span class="tag tag-churn">Churn</span>';
-  }
-
-  document.getElementById('tabla-clientes').innerHTML =
-    `<thead><tr><th>Cliente</th><th></th><th>Raciones</th><th>U$S</th><th>U$S / ración</th><th>Último pedido</th></tr></thead>` +
-    `<tbody>${sorted.map(([name, d]) => {
-      const dates = d.rows.map(r => r.emision).filter(d => d instanceof Date && !isNaN(d));
-      const last  = dates.length ? new Date(Math.max(...dates)) : null;
-      return `<tr onclick="selectClient('${name.replace(/'/g,"\\'")}')">
-        <td>${name}</td><td>${clientTag(d.rows)}</td>
-        <td>${fmtN(Math.round(d.raciones))}</td>
-        <td>${fmtN(Math.round(d.netoUsd))}</td>
-        <td>${fmtN(d.raciones ? d.netoUsd / d.raciones : 0, 2)}</td>
-        <td>${fmtDate(last)}</td>
-      </tr>`;
-    }).join('')}</tbody>`;
-}
-
-function selectClient(name) {
-  const sel = document.getElementById('cliente-select');
-  sel.value = name;
-  sel.dispatchEvent(new Event('change'));
-  document.querySelectorAll('.client-table tbody tr').forEach(tr => {
-    tr.classList.toggle('active-row', tr.cells[0]?.textContent === name);
+  const churnVals = months.map(k => {
+    const prevKey = prevMonthKey(k);
+    const prev    = allData.clientsByMonth[prevKey] || new Set();
+    const curr    = allData.clientsByMonth[k]       || new Set();
+    return [...prev].filter(c => !curr.has(c)).length;
   });
-}
 
-function renderWeeklyChart(clientName, clientTotals) {
-  if (!clientName || !clientTotals[clientName]) return;
-  const rows = clientTotals[clientName].rows.filter(r => r.raciones > 0);
-
-  const weekMap = new Map();
-  rows.forEach(r => {
-    if (!r.wk) return;
-    weekMap.set(r.wk, (weekMap.get(r.wk) || 0) + r.raciones);
-  });
-  const weeks  = [...weekMap.keys()].sort();
-  const vals   = weeks.map(w => Math.round(weekMap.get(w)));
-  const colors = vals.map((v, i) => i === 0 ? 'rgba(59,142,240,0.7)' : v >= vals[i-1] ? 'rgba(29,184,122,0.75)' : 'rgba(224,82,82,0.75)');
-
-  destroyChart('semanal');
-  charts.semanal = new Chart(document.getElementById('chart-semanal'), {
+  destroyChart('mov');
+  charts.mov = new Chart(document.getElementById('chart-movimientos'), {
     type: 'bar',
-    data: { labels: weeks.map(weekLabel), datasets: [{ data: vals, backgroundColor: colors, borderRadius: 3 }] },
+    data: {
+      labels: months.map(periodLabel),
+      datasets: [
+        { label: 'Nuevos',   data: nuevosVals,          backgroundColor: 'rgba(29,184,122,0.75)', borderRadius: 3 },
+        { label: 'Churn',    data: churnVals.map(v=>-v), backgroundColor: 'rgba(224,82,82,0.75)',  borderRadius: 3 },
+      ],
+    },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: ctx => {
-              const wk = weeks[ctx[0].dataIndex];
-              const start = weekStartDate(wk);
-              if (!start) return weekLabel(wk);
-              const end = new Date(start.getTime() + 6 * 86400000);
-              return `${fmtDate(start)} — ${fmtDate(end)}`;
-            },
-            label: ctx => `${fmtN(ctx.raw)} raciones`,
-          },
-        },
+        legend: { display: true, labels: { color: '#8b90a0', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${Math.abs(ctx.raw)}` } },
       },
       scales: {
         x: { ticks: { color: '#8b90a0', font: { size: 11 }, autoSkip: true, maxRotation: 45 }, grid: { display: false } },
-        y: { ticks: { color: '#8b90a0', font: { size: 11 }, callback: v => fmtN(v) }, grid: { color: '#2e3240' } },
+        y: { ticks: { color: '#8b90a0', font: { size: 11 }, callback: v => Math.abs(v) }, grid: { color: '#2e3240' } },
       },
     },
   });
+}
 
-  document.querySelectorAll('.client-table tbody tr').forEach(tr => {
-    tr.classList.toggle('active-row', tr.cells[0]?.textContent === clientName);
+function renderClientTable(periodKeys) {
+  const clientData = {};
+  periodKeys.forEach(mKey => {
+    Object.entries(allData.clientMonthData[mKey] || {}).forEach(([name, data]) => {
+      if (!clientData[name]) clientData[name] = { netoUsd: 0, montoNeto: 0, lastPurchase: null };
+      const cd = clientData[name];
+      cd.netoUsd   += data.netoUsd;
+      cd.montoNeto += data.montoNeto;
+      if (data.lastPurchase && (!cd.lastPurchase || data.lastPurchase > cd.lastPurchase)) cd.lastPurchase = data.lastPurchase;
+    });
   });
+
+  const sorted = Object.entries(clientData).sort((a, b) => b[1].netoUsd - a[1].netoUsd);
+  const today  = new Date();
+
+  function getTag(name) {
+    if (periodKeys.length === 1) {
+      return allData.clientFirstMonth[name] === periodKeys[0]
+        ? '<span class="tag tag-nuevo">Nuevo</span>'
+        : '<span class="tag tag-activo">Activo</span>';
+    }
+    const last = allData.clientLastPurchase[name];
+    if (!last) return '';
+    const days = (today - last) / 86400000;
+    if (days <= 30)  return '<span class="tag tag-activo">Activo</span>';
+    if (days <= 90)  return '<span class="tag tag-inactivo">Inactivo</span>';
+    return '<span class="tag tag-churn">Churn</span>';
+  }
+
+  document.getElementById('title-clientes').textContent = `Clientes del período — ${sorted.length} CCC`;
+
+  document.getElementById('tabla-clientes').innerHTML =
+    `<thead><tr>
+      <th>Cliente</th><th></th>
+      <th>Fact. USD</th><th>Fact. ARS</th>
+      <th>Último pago</th>
+    </tr></thead>` +
+    `<tbody>${sorted.map(([name, d]) => `
+      <tr>
+        <td>${name}</td>
+        <td>${getTag(name)}</td>
+        <td>U$S ${fmtN(Math.round(d.netoUsd))}</td>
+        <td>${fmtAR(d.montoNeto)}</td>
+        <td>${fmtDate(d.lastPurchase)}</td>
+      </tr>`).join('')}
+    </tbody>`;
+}
+
+// --- Dashboard setup ---
+function buildDashboard() {
+  renderYearFilters();
+  renderMonthFilters();
+  renderAll();
+  showScreen('report-screen');
+}
+
+function renderYearFilters() {
+  const container = document.getElementById('year-filters');
+  container.innerHTML = '';
+
+  allData.fiscalYears.forEach(fy => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (fy === activeYear ? ' active' : '');
+    btn.textContent = fyLabel(fy);
+    btn.onclick = () => {
+      activeYear     = fy;
+      activeMonthKey = null;
+      document.querySelectorAll('#year-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderMonthFilters();
+      renderAll();
+    };
+    container.appendChild(btn);
+  });
+
+  if (allData.fiscalYears.length > 1) {
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-btn' + (activeYear === null ? ' active' : '');
+    allBtn.textContent = 'Todos';
+    allBtn.onclick = () => {
+      activeYear     = null;
+      activeMonthKey = null;
+      document.querySelectorAll('#year-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      allBtn.classList.add('active');
+      renderMonthFilters();
+      renderAll();
+    };
+    container.appendChild(allBtn);
+  }
+}
+
+function renderMonthFilters() {
+  const section   = document.getElementById('month-filter-section');
+  const container = document.getElementById('month-filters');
+
+  if (activeYear === null) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'flex';
+
+  const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const available = allData.allMonths.filter(k => fiscalYear(k) === activeYear).sort();
+  container.innerHTML = '';
+
+  const todosBtn = document.createElement('button');
+  todosBtn.className = 'filter-btn' + (activeMonthKey === null ? ' active' : '');
+  todosBtn.textContent = 'Todos';
+  todosBtn.onclick = () => {
+    activeMonthKey = null;
+    document.querySelectorAll('#month-filters .filter-btn').forEach(b => b.classList.remove('active'));
+    todosBtn.classList.add('active');
+    renderAll();
+  };
+  container.appendChild(todosBtn);
+
+  available.forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (k === activeMonthKey ? ' active' : '');
+    btn.textContent = MONTHS[parseInt(k.slice(5)) - 1];
+    btn.onclick = () => {
+      activeMonthKey = k;
+      document.querySelectorAll('#month-filters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    };
+    container.appendChild(btn);
+  });
+}
+
+function setCurrency(cur) {
+  currency = cur;
+  document.getElementById('btn-usd').classList.toggle('active', cur === 'usd');
+  document.getElementById('btn-ars').classList.toggle('active', cur === 'ars');
+  if (allData) renderAll();
 }
 
 function destroyChart(key) {
