@@ -299,8 +299,8 @@ function parseConsumosWorkbook(wb) {
   };
   const COL = {
     fecha:    find('fecha', 'emision', 'date', 'periodo fiscal', 'período'),
-    cliente:  find('fantasia', 'cliente', 'razon', 'nombre'),
-    raciones: find('racion', 'cantidad', 'unidades', 'qty', 'porcion', 'ración'),
+    cliente:  find('comedor', 'fantasia', 'cliente', 'razon', 'nombre'),
+    raciones: find('raciones', 'racion', 'cantidad', 'unidades', 'qty', 'porcion'),
     udn:      find('udn', 'negocio', 'empresa', 'division'),
   };
   console.log('[consumos] sheet:', sheetName, '| columnas detectadas:', COL);
