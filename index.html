@@ -338,10 +338,13 @@ function parseConsumosWorkbook(wb) {
     udn:      find('udn', 'negocio', 'empresa', 'division'),
   };
 
-  // Debug first row so we can verify in console
-  console.log('[consumos] sheet:', sheetName);
-  console.log('[consumos] columnas detectadas:', COL);
-  console.log('[consumos] primera fila raw:', rows[0]);
+  console.log('[consumos] sheet:', sheetName, '| columnas:', COL);
+
+  // Log all unique raw client names so we can catch missing normalizations
+  if (COL.cliente) {
+    const rawNames = [...new Set(scRows.map(r => String(r[COL.cliente]).trim()))].sort();
+    console.log('[consumos] nombres únicos SIN normalizar (' + rawNames.length + '):\n' + rawNames.join('\n'));
+  }
 
   const scRows = COL.udn
     ? rows.filter(r => String(r[COL.udn]).trim() === 'Sous Chef')
