@@ -301,7 +301,7 @@ const CLIENT_RULES = [
   [/^LA FERNETERIA/i,        'LA FERNETERIA'],
   [/^MELAO/i,                'MELAO'],
   [/^MUESTRA SC/i,           'MUESTRA SC'],
-  [/^OREJA NEGRA/i,          'OREJA NEGRA'],
+  [/^OREJA NEGRA/i,          'DISFRIOALAR'],
 ];
 function normalizeClient(raw) {
   const s = String(raw).trim();
@@ -735,18 +735,6 @@ function renderClientTable(periodKeys) {
     })
     .sort((a, b) => a.days - b.days);
 
-  // Validation flags: clients only in consumos / only in ventas
-  const ventasClients = new Set();
-  periodKeys.forEach(k => (allData.clientsByMonth[k] || new Set()).forEach(c => ventasClients.add(c)));
-
-  function validationFlag(name) {
-    if (!consumosData) return '';
-    const inConsumos = activeInPeriod.has(name);
-    const inVentas   = ventasClients.has(name);
-    if (inConsumos && !inVentas) return ' <span class="tag" style="background:rgba(255,180,0,0.15);color:#ffb400">sin factura</span>';
-    if (!inConsumos && inVentas) return ' <span class="tag" style="background:rgba(224,82,82,0.15);color:#e05252">sin consumo</span>';
-    return '';
-  }
 
   const showRaciones = !!consumosData;
   const colSpan = showRaciones ? 7 : 6;
@@ -765,7 +753,7 @@ function renderClientTable(periodKeys) {
   const buyerRows = sorted.map(([name, d], i) => `
     <tr>
       <td class="idx">${i + 1}</td>
-      <td>${name}${validationFlag(name)}</td>
+      <td>${name}</td>
       <td>${getBuyerTag(name)}</td>
       ${showRaciones ? `<td>${fmtN(Math.round(d.raciones))}</td>` : ''}
       <td>${d.netoUsd ? 'U$S ' + fmtN(Math.round(d.netoUsd)) : '—'}</td>
