@@ -284,6 +284,26 @@ async function fetchShareFile(token, shareUrl) {
   });
 }
 
+// Client name normalization — unifies variants into canonical names
+const CLIENT_RULES = [
+  [/^CORPO CAF[EÉ]/i,        'CORPO CAFÉ'],
+  [/^CHEF POINT/i,           'CHEF POINT'],
+  [/^FEDERICO PITA/i,        'FEDERICO PITA'],
+  [/^FRIKS/i,                'FRIKS'],
+  [/^INSTITUTO UN LUGAR/i,   'INSTITUTO UN LUGAR'],
+  [/^LA FACTORY/i,           'LA FACTORY'],
+  [/^LA FERNETERIA/i,        'LA FERNETERIA'],
+  [/^OREJA NEGRA/i,          'OREJA NEGRA'],
+  [/^MUESTRA SC/i,           'MUESTRA SC'],
+];
+function normalizeClient(raw) {
+  const s = String(raw).trim();
+  for (const [pattern, canonical] of CLIENT_RULES) {
+    if (pattern.test(s)) return canonical;
+  }
+  return s;
+}
+
 // Parses dates in multiple formats: JS Date, ISO string, DD-MM-YYYY, DD/MM/YYYY
 function parseFlexDate(raw) {
   if (!raw) return null;
@@ -338,7 +358,7 @@ function parseConsumosWorkbook(wb) {
     if (!date) { skipped++; return; }
 
     const mKey    = periodKey(date);
-    const client  = COL.cliente ? (String(r[COL.cliente]).trim() || 'Sin nombre') : 'Sin nombre';
+    const client  = COL.cliente ? (normalizeClient(r[COL.cliente]) || 'Sin nombre') : 'Sin nombre';
     const raciones = COL.raciones ? (Number(r[COL.raciones]) || 0) : 1;
 
     if (!clientsByMonth[mKey]) clientsByMonth[mKey] = new Set();
