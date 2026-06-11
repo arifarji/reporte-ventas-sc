@@ -156,9 +156,11 @@ const ITEM_ID  = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
 const REDIRECT = 'https://reporte-ventas-sc.vercel.app/';
 const CONSUMOS_SHARE_URL = 'https://grupotronchetto-my.sharepoint.com/:x:/r/personal/ariel_farji_tronchetto_com_ar/_layouts/15/Doc.aspx?sourcedoc=%7B9D156B9E-4224-4565-BFF3-376D166EB1EC%7D&file=consumosEneroalprincipiodeMayo.xlsx&action=default&mobileredirect=true';
 // Resumen pre-procesado por Office Script + Power Automate (ver office-script-resumen-sous-chef.ts).
-// Si el archivo no existe todavía, el dashboard cae al xlsx completo (lento).
-const DATA_JSON_URL = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:` +
-  encodeURI('/Documentos/01- Contabilidad/02- Contabilidad mensual/01- Ventas/02- Reportes venta/sous-chef-data.json') + ':/content';
+// Lo genera el flujo "Resumen diario Sous Chef" (7am) en el site Comercial.
+// Si el archivo no existe o no es accesible, el dashboard cae al xlsx completo (lento).
+const COMERCIAL_DRIVE_ID = 'b!N3NhGotE_0Gu3lFrMvvgdxh9-H_qYK1Bu9dwusihixvmsTzehqeSSYtKVHh4x6SC';
+const DATA_JSON_URL = `https://graph.microsoft.com/v1.0/drives/${COMERCIAL_DRIVE_ID}/root:` +
+  encodeURI('/COMERCIAL/sous-chef-data.json') + ':/content';
 
 let currency       = 'usd';
 let activeYear     = null;   // fiscal year number or null = all
