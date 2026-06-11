@@ -155,6 +155,10 @@ const DRIVE_ID = 'b!pmFBZLuJVkeuGzPtHmyMtMnI1MPI-WtNtZQeYhwzMrCBd7CMfYuTQKSXTAwl
 const ITEM_ID  = '01FRDE3KMK5RHCJV4F4FE3JD5SSAWLFEMT';
 const REDIRECT = 'https://reporte-ventas-sc.vercel.app/';
 const CONSUMOS_SHARE_URL = 'https://grupotronchetto-my.sharepoint.com/:x:/r/personal/ariel_farji_tronchetto_com_ar/_layouts/15/Doc.aspx?sourcedoc=%7B9D156B9E-4224-4565-BFF3-376D166EB1EC%7D&file=consumosEneroalprincipiodeMayo.xlsx&action=default&mobileredirect=true';
+// Resumen pre-procesado por Office Script + Power Automate (ver office-script-resumen-sous-chef.ts).
+// Si el archivo no existe todavía, el dashboard cae al xlsx completo (lento).
+const DATA_JSON_URL = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/root:` +
+  encodeURI('/Documentos/01- Contabilidad/02- Contabilidad mensual/01- Ventas/02- Reportes venta/sous-chef-data.json') + ':/content';
 
 let currency       = 'usd';
 let activeYear     = null;   // fiscal year number or null = all
@@ -391,8 +395,80 @@ function parseConsumosWorkbook(wb) {
   return { clientsByMonth, clientFirstMonth, clientMonthData, clientLastDate, allMonths };
 }
 
+// Reconstruye las estructuras del dashboard (Maps, Sets, Dates) desde el JSON pre-procesado
+function hydrateVentasJson(j) {
+  const scMonthly = new Map(Object.entries(j.scMonthly || {}));
+  const mepData   = new Map(Object.entries(j.mepData || {}).map(([k, v]) => [k, Number(v)]));
+
+  const clientsByMonth = {};
+  Object.entries(j.clientsByMonth || {}).forEach(([k, names]) => { clientsByMonth[k] = new Set(names); });
+
+  const clientMonthData = {};
+  Object.entries(j.clientMonthData || {}).forEach(([k, clients]) => {
+    clientMonthData[k] = {};
+    Object.entries(clients).forEach(([name, d]) => {
+      clientMonthData[k][name] = {
+        netoUsd: Number(d.netoUsd) || 0,
+        montoNeto: Number(d.montoNeto) || 0,
+        lastPurchase: d.lastPurchase ? new Date(d.lastPurchase) : null,
+      };
+    });
+  });
+
+  const clientLastPurchase = {};
+  Object.entries(j.clientLastPurchase || {}).forEach(([name, iso]) => { clientLastPurchase[name] = new Date(iso); });
+
+  const allMonths   = [...scMonthly.keys()].sort();
+  const fiscalYears = [...new Set(allMonths.map(k => fiscalYear(k)))].sort((a, b) => b - a);
+
+  return { scMonthly, mepData, clientsByMonth, clientFirstMonth: j.clientFirstMonth || {}, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
+}
+
+// Fallback: parsea el xlsx completo en el navegador (lento — solo si el JSON no está disponible)
+function parseVentasWorkbook(ventasBuf) {
+  // sheets: limita el parseo a las dos hojas que se usan; sin esto el workbook entero explota en memoria
+  const ventasWb = XLSX.read(ventasBuf, { type: 'array', cellDates: true, sheets: ['Base', 'Indices'] });
+  const rows = XLSX.utils.sheet_to_json(ventasWb.Sheets['Base'], { defval: '' });
+  const scRows = rows.filter(r => String(r['UDN']).trim() === 'Sous Chef');
+
+  const scMonthly          = new Map();
+  const clientsByMonth     = {};
+  const clientFirstMonth   = {};
+  const clientMonthData    = {};
+  const clientLastPurchase = {};
+
+  scRows.forEach(r => {
+    const mKey   = periodKey(r['Periodo fiscal']);
+    const client = String(r['Fantasia']).trim() || String(r['Cliente']).trim() || 'Sin nombre';
+    const usd    = Number(r['Neto u$s'])   || 0;
+    const ars    = Number(r['Monto Neto']) || 0;
+    const emision = r['Emision'] instanceof Date ? r['Emision'] : new Date(r['Emision']);
+    const emOk   = !isNaN(emision);
+
+    if (!scMonthly.has(mKey)) scMonthly.set(mKey, { montoNeto: 0, netoUsd: 0 });
+    const sm = scMonthly.get(mKey); sm.montoNeto += ars; sm.netoUsd += usd;
+
+    if (!clientsByMonth[mKey]) clientsByMonth[mKey] = new Set();
+    clientsByMonth[mKey].add(client);
+    if (!clientFirstMonth[client] || mKey < clientFirstMonth[client]) clientFirstMonth[client] = mKey;
+
+    if (!clientMonthData[mKey]) clientMonthData[mKey] = {};
+    if (!clientMonthData[mKey][client]) clientMonthData[mKey][client] = { netoUsd: 0, montoNeto: 0, lastPurchase: null };
+    const cd = clientMonthData[mKey][client];
+    cd.netoUsd += usd; cd.montoNeto += ars;
+    if (emOk && (!cd.lastPurchase || emision > cd.lastPurchase)) cd.lastPurchase = emision;
+    if (emOk && (!clientLastPurchase[client] || emision > clientLastPurchase[client])) clientLastPurchase[client] = emision;
+  });
+
+  const mepData     = ventasWb.Sheets['Indices'] ? parseMEP(ventasWb.Sheets['Indices']) : new Map();
+  const allMonths   = [...scMonthly.keys()].sort();
+  const fiscalYears = [...new Set(allMonths.map(k => fiscalYear(k)))].sort((a, b) => b - a);
+
+  return { scMonthly, mepData, clientsByMonth, clientFirstMonth, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
+}
+
 async function loadFile(token) {
-  setLoading('Descargando archivo desde SharePoint...');
+  setLoading('Cargando datos...');
   try {
     const user = await getUser(token);
     if (user) {
@@ -402,66 +478,35 @@ async function loadFile(token) {
       document.getElementById('user-name').textContent = user.displayName || user.userPrincipalName;
     }
 
-    // Fetch both files in parallel
-    setLoading('Descargando archivos...');
-    const ventasUrl = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${ITEM_ID}/content`;
-    const [ventasRes, consumosRes] = await Promise.all([
-      fetch(ventasUrl, { headers: { Authorization: 'Bearer ' + token } }),
+    // JSON pre-procesado + consumos, en paralelo
+    const [jsonRes, consumosRes] = await Promise.all([
+      fetch(DATA_JSON_URL, { headers: { Authorization: 'Bearer ' + token } }).catch(() => null),
       fetchShareFile(token, CONSUMOS_SHARE_URL).catch(() => null),
     ]);
 
-    if (ventasRes.status === 401) { showScreen('login-screen'); return; }
-    if (!ventasRes.ok) throw new Error(`Error ventas ${ventasRes.status}: ${ventasRes.statusText}`);
+    if (jsonRes && jsonRes.status === 401) { showScreen('login-screen'); return; }
 
-    setLoading('Procesando datos...');
-
-    // --- Parse ventas file ---
-    const ventasBuf = await ventasRes.arrayBuffer();
-    const ventasWb  = XLSX.read(ventasBuf, { type: 'array', cellDates: true });
-    const rows = XLSX.utils.sheet_to_json(ventasWb.Sheets['Base'], { defval: '' });
-    const scRows = rows.filter(r => String(r['UDN']).trim() === 'Sous Chef');
-
-    const scMonthly          = new Map();
-    const clientsByMonth     = {};
-    const clientFirstMonth   = {};
-    const clientMonthData    = {};
-    const clientLastPurchase = {};
-
-    scRows.forEach(r => {
-      const mKey   = periodKey(r['Periodo fiscal']);
-      const client = String(r['Fantasia']).trim() || String(r['Cliente']).trim() || 'Sin nombre';
-      const usd    = Number(r['Neto u$s'])   || 0;
-      const ars    = Number(r['Monto Neto']) || 0;
-      const emision = r['Emision'] instanceof Date ? r['Emision'] : new Date(r['Emision']);
-      const emOk   = !isNaN(emision);
-
-      if (!scMonthly.has(mKey)) scMonthly.set(mKey, { montoNeto: 0, netoUsd: 0 });
-      const sm = scMonthly.get(mKey); sm.montoNeto += ars; sm.netoUsd += usd;
-
-      if (!clientsByMonth[mKey]) clientsByMonth[mKey] = new Set();
-      clientsByMonth[mKey].add(client);
-      if (!clientFirstMonth[client] || mKey < clientFirstMonth[client]) clientFirstMonth[client] = mKey;
-
-      if (!clientMonthData[mKey]) clientMonthData[mKey] = {};
-      if (!clientMonthData[mKey][client]) clientMonthData[mKey][client] = { netoUsd: 0, montoNeto: 0, lastPurchase: null };
-      const cd = clientMonthData[mKey][client];
-      cd.netoUsd += usd; cd.montoNeto += ars;
-      if (emOk && (!cd.lastPurchase || emision > cd.lastPurchase)) cd.lastPurchase = emision;
-      if (emOk && (!clientLastPurchase[client] || emision > clientLastPurchase[client])) clientLastPurchase[client] = emision;
-    });
-
-    const mepData     = ventasWb.Sheets['Indices'] ? parseMEP(ventasWb.Sheets['Indices']) : new Map();
-    const allMonths   = [...scMonthly.keys()].sort();
-    const fiscalYears = [...new Set(allMonths.map(k => fiscalYear(k)))].sort((a, b) => b - a);
+    if (jsonRes && jsonRes.ok) {
+      allData = hydrateVentasJson(await jsonRes.json());
+      console.log('[ventas] usando resumen JSON pre-procesado');
+    } else {
+      // Fallback: descargar y parsear el xlsx completo
+      console.warn('[ventas] resumen JSON no disponible (status:', jsonRes?.status, ') — usando xlsx completo');
+      setLoading('Descargando archivo completo (puede demorar)...');
+      const ventasUrl = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${ITEM_ID}/content`;
+      const ventasRes = await fetch(ventasUrl, { headers: { Authorization: 'Bearer ' + token } });
+      if (ventasRes.status === 401) { showScreen('login-screen'); return; }
+      if (!ventasRes.ok) throw new Error(`Error ventas ${ventasRes.status}: ${ventasRes.statusText}`);
+      setLoading('Procesando datos...');
+      allData = parseVentasWorkbook(await ventasRes.arrayBuffer());
+    }
 
     const nowKey     = new Date().toISOString().slice(0, 7);
-    const completed  = allMonths.filter(k => k < nowKey);
-    const defaultKey = completed.length ? completed[completed.length - 1] : allMonths[allMonths.length - 1];
+    const completed  = allData.allMonths.filter(k => k < nowKey);
+    const defaultKey = completed.length ? completed[completed.length - 1] : allData.allMonths[allData.allMonths.length - 1];
 
     activeYear     = fiscalYear(defaultKey);
     activeMonthKey = defaultKey;
-
-    allData = { scMonthly, mepData, clientsByMonth, clientFirstMonth, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
 
     // --- Parse consumos file (optional) ---
     if (consumosRes && consumosRes.ok) {
