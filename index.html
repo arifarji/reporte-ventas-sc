@@ -394,6 +394,11 @@ function parseConsumosWorkbook(wb) {
   const allMonths = [...new Set(Object.keys(clientsByMonth))].sort();
   console.log('[consumos] meses:', allMonths);
   console.log('[consumos] clientes únicos:', Object.keys(clientFirstMonth).length, '| filas salteadas:', skipped);
+  // Sin meses válidos el archivo no sirve como fuente de CCC — mejor caer a facturación
+  if (!allMonths.length) {
+    console.warn('[consumos] sin datos válidos — se usa facturación para CCC/retención');
+    return null;
+  }
   return { clientsByMonth, clientFirstMonth, clientMonthData, clientLastDate, allMonths };
 }
 
