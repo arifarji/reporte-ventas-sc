@@ -410,6 +410,9 @@ function hydrateVentasJson(j) {
   const clientsByMonth = {};
   Object.entries(j.clientsByMonth || {}).forEach(([k, names]) => { clientsByMonth[k] = new Set(names); });
 
+  const sucursalesByMonth = {};
+  Object.entries(j.sucursalesByMonth || {}).forEach(([k, names]) => { sucursalesByMonth[k] = new Set(names); });
+
   const clientMonthData = {};
   Object.entries(j.clientMonthData || {}).forEach(([k, clients]) => {
     clientMonthData[k] = {};
@@ -428,7 +431,7 @@ function hydrateVentasJson(j) {
   const allMonths   = [...scMonthly.keys()].sort();
   const fiscalYears = [...new Set(allMonths.map(k => fiscalYear(k)))].sort((a, b) => b - a);
 
-  return { scMonthly, mepData, clientsByMonth, clientFirstMonth: j.clientFirstMonth || {}, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
+  return { scMonthly, mepData, clientsByMonth, sucursalesByMonth, clientFirstMonth: j.clientFirstMonth || {}, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
 }
 
 // Fallback: parsea el xlsx completo en el navegador (lento — solo si el JSON no está disponible)
@@ -440,6 +443,7 @@ function parseVentasWorkbook(ventasBuf) {
 
   const scMonthly          = new Map();
   const clientsByMonth     = {};
+  const sucursalesByMonth  = {};
   const clientFirstMonth   = {};
   const clientMonthData    = {};
   const clientLastPurchase = {};
@@ -447,6 +451,7 @@ function parseVentasWorkbook(ventasBuf) {
   scRows.forEach(r => {
     const mKey   = periodKey(r['Periodo fiscal']);
     const client = String(r['Fantasia']).trim() || String(r['Cliente']).trim() || 'Sin nombre';
+    const sucursal = String(r['Cliente']).trim() || client;
     const usd    = Number(r['Neto u$s'])   || 0;
     const ars    = Number(r['Monto Neto']) || 0;
     const emision = r['Emision'] instanceof Date ? r['Emision'] : new Date(r['Emision']);
@@ -457,6 +462,8 @@ function parseVentasWorkbook(ventasBuf) {
 
     if (!clientsByMonth[mKey]) clientsByMonth[mKey] = new Set();
     clientsByMonth[mKey].add(client);
+    if (!sucursalesByMonth[mKey]) sucursalesByMonth[mKey] = new Set();
+    sucursalesByMonth[mKey].add(sucursal);
     if (!clientFirstMonth[client] || mKey < clientFirstMonth[client]) clientFirstMonth[client] = mKey;
 
     if (!clientMonthData[mKey]) clientMonthData[mKey] = {};
@@ -471,7 +478,7 @@ function parseVentasWorkbook(ventasBuf) {
   const allMonths   = [...scMonthly.keys()].sort();
   const fiscalYears = [...new Set(allMonths.map(k => fiscalYear(k)))].sort((a, b) => b - a);
 
-  return { scMonthly, mepData, clientsByMonth, clientFirstMonth, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
+  return { scMonthly, mepData, clientsByMonth, sucursalesByMonth, clientFirstMonth, clientMonthData, clientLastPurchase, fiscalYears, allMonths };
 }
 
 async function loadFile(token) {
@@ -563,6 +570,11 @@ function calcKPIs(periodKeys) {
   periodKeys.forEach(k => { (src.clientsByMonth[k] || new Set()).forEach(c => clients.add(c)); });
   const ccc = clients.size;
 
+  // CCC sin agrupar: razones sociales únicas (ADP cuenta sus 14 sucursales) — siempre desde ventas
+  const sucursales = new Set();
+  periodKeys.forEach(k => { ((allData.sucursalesByMonth || {})[k] || new Set()).forEach(c => sucursales.add(c)); });
+  const cccSucursales = sucursales.size || null;
+
   let totalUsd = 0, totalArs = 0;
   periodKeys.forEach(k => {
     const d = allData.scMonthly.get(k) || {};
@@ -591,7 +603,7 @@ function calcKPIs(periodKeys) {
     if (mepKeys.length) tcMep = allData.mepData.get(mepKeys[mepKeys.length - 1]);
   }
 
-  return { ccc, totalUsd, totalArs, clientesNuevos, retencion, churnPct, retenidosN, churnN, tcMep };
+  return { ccc, cccSucursales, totalUsd, totalArs, clientesNuevos, retencion, churnPct, retenidosN, churnN, tcMep };
 }
 
 // --- Render ---
@@ -611,7 +623,7 @@ function renderAll() {
 }
 
 function renderKPICards(kpis, lbl) {
-  const { ccc, totalUsd, totalArs, clientesNuevos, retencion, churnPct, retenidosN, churnN, tcMep } = kpis;
+  const { ccc, cccSucursales, totalUsd, totalArs, clientesNuevos, retencion, churnPct, retenidosN, churnN, tcMep } = kpis;
 
   const card = c => `
     <div class="kpi-card${c.highlight ? ' highlight' : ''}">
@@ -621,7 +633,7 @@ function renderKPICards(kpis, lbl) {
     </div>`;
 
   document.getElementById('kpi-row-1').innerHTML = [
-    { label: `CCC — ${lbl}`, main: fmtN(ccc), sub: '', highlight: true },
+    { label: `CCC — ${lbl}`, main: fmtN(ccc), sub: cccSucursales ? `${fmtN(cccSucursales)} puntos de venta (sin agrupar)` : '', highlight: true },
     { label: 'Facturación USD', main: `U$S ${fmtN(Math.round(totalUsd))}`, sub: '' },
     { label: 'Facturación ARS', main: fmtAR(totalArs), sub: '' },
     { label: 'TC MEP', main: tcMep ? `$${fmtN(tcMep)}` : '—', sub: '' },

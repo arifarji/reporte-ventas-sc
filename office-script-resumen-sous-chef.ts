@@ -44,6 +44,8 @@ function main(workbook: ExcelScript.Workbook): string {
 
   const scMonthly: { [k: string]: { montoNeto: number; netoUsd: number } } = {};
   const clientsByMonthSet: { [k: string]: { [c: string]: boolean } } = {};
+  // Sucursales = razones sociales (col Cliente); Fantasia agrupa marcas (ADP = 14 razones sociales)
+  const sucursalesByMonthSet: { [k: string]: { [c: string]: boolean } } = {};
   const clientFirstMonth: { [c: string]: string } = {};
   const clientMonthData: { [k: string]: { [c: string]: { netoUsd: number; montoNeto: number; lastPurchase: string | null } } } = {};
   const clientLastPurchase: { [c: string]: string } = {};
@@ -65,6 +67,10 @@ function main(workbook: ExcelScript.Workbook): string {
     if (!clientsByMonthSet[mKey]) clientsByMonthSet[mKey] = {};
     clientsByMonthSet[mKey][client] = true;
 
+    const sucursal = String(vCliente[i] ?? '').trim() || client;
+    if (!sucursalesByMonthSet[mKey]) sucursalesByMonthSet[mKey] = {};
+    sucursalesByMonthSet[mKey][sucursal] = true;
+
     if (!clientFirstMonth[client] || mKey < clientFirstMonth[client]) clientFirstMonth[client] = mKey;
 
     if (!clientMonthData[mKey]) clientMonthData[mKey] = {};
@@ -81,6 +87,8 @@ function main(workbook: ExcelScript.Workbook): string {
 
   const clientsByMonth: { [k: string]: string[] } = {};
   for (const k in clientsByMonthSet) clientsByMonth[k] = Object.keys(clientsByMonthSet[k]);
+  const sucursalesByMonth: { [k: string]: string[] } = {};
+  for (const k in sucursalesByMonthSet) sucursalesByMonth[k] = Object.keys(sucursalesByMonthSet[k]);
 
   // --- Hoja Indices: TC MEP (col B = periodo, col D = valor) ---
   const mepData: { [k: string]: number } = {};
@@ -110,6 +118,7 @@ function main(workbook: ExcelScript.Workbook): string {
     scMonthly,
     mepData,
     clientsByMonth,
+    sucursalesByMonth,
     clientFirstMonth,
     clientMonthData,
     clientLastPurchase,
